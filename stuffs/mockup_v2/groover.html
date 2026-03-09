@@ -1,0 +1,2086 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Groover - Logistics Flow</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Custom Config -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            900: '#0c4a6e',
+                        },
+                    },
+                    animation: {
+                        'shake': 'shake 0.5s cubic-bezier(.36,.07,.19,.97) both',
+                        'fade-in': 'fadeIn 0.3s ease-in-out',
+                    },
+                    keyframes: {
+                        shake: {
+                            '10%, 90%': { transform: 'translate3d(-1px, 0, 0)' },
+                            '20%, 80%': { transform: 'translate3d(2px, 0, 0)' },
+                            '30%, 50%, 70%': { transform: 'translate3d(-4px, 0, 0)' },
+                            '40%, 60%': { transform: 'translate3d(4px, 0, 0)' }
+                        },
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 text-gray-800 h-screen overflow-hidden flex flex-col">
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed top-5 right-5 z-[60] flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- VIEW: LOGIN -->
+    <div id="view-login" class="fixed inset-0 z-50 bg-gray-100 flex items-center justify-center">
+        <div class="bg-white p-10 rounded-2xl shadow-xl w-full max-w-md border border-gray-100">
+            <div class="text-center mb-8">
+                <div
+                    class="w-16 h-16 bg-brand-600 rounded-xl mx-auto flex items-center justify-center mb-4 shadow-lg text-white text-3xl">
+                    <i class="fa-solid fa-dolly"></i>
+                </div>
+                <h1 class="text-3xl font-bold text-gray-900">Groover</h1>
+                <p class="text-gray-500 mt-2">Logistics Fulfillment Dashboard</p>
+            </div>
+            <form id="login-form" class="space-y-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+                    <input type="text" value="groover_01"
+                        class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-500 outline-none transition-all">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                    <input type="password" value="********"
+                        class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-500 outline-none transition-all">
+                </div>
+                <button type="submit"
+                    class="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-3.5 rounded-lg shadow-md transition-all">
+                    Login to Dashboard
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- APP SHELL (Hidden until login) -->
+    <div id="view-app" class="hidden flex-1 flex flex-col h-full">
+
+        <!-- NAVBAR -->
+        <header class="bg-white border-b border-gray-200 h-16 flex items-center justify-between px-6 shrink-0 z-40">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center text-white">
+                    <i class="fa-solid fa-dolly text-sm"></i>
+                </div>
+                <span class="font-bold text-xl tracking-tight text-gray-900">Groover</span>
+            </div>
+            <div class="flex items-center gap-4">
+                <div class="flex items-center gap-2 bg-brand-50 px-3 py-1.5 rounded-full border border-brand-100">
+                    <span class="w-2 h-2 rounded-full bg-brand-500 animate-pulse"></span>
+                    <span class="text-xs font-bold text-brand-700 uppercase tracking-wide">Groover Active</span>
+                </div>
+                <button id="btn-logout" class="text-gray-400 hover:text-red-500 transition-colors p-2">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- VIEW: DASHBOARD -->
+        <main id="view-dashboard" class="flex-1 overflow-hidden flex flex-col p-6 gap-6">
+
+            <!-- Widgets -->
+            <div class="grid grid-cols-4 gap-6 shrink-0">
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
+                    <div
+                        class="w-12 h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-boxes-stacked"></i>
+                    </div>
+                    <div>
+                        <span id="stat-total" class="block text-2xl font-bold text-gray-900">--</span>
+                        <span class="text-xs text-gray-500 uppercase font-bold tracking-wider">Total Orders</span>
+                    </div>
+                </div>
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
+                    <div
+                        class="w-12 h-12 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-crown"></i>
+                    </div>
+                    <div>
+                        <span id="stat-vip" class="block text-2xl font-bold text-gray-900">--</span>
+                        <span class="text-xs text-gray-500 uppercase font-bold tracking-wider">VIP Priority</span>
+                    </div>
+                </div>
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
+                    <div
+                        class="w-12 h-12 rounded-full bg-gray-50 text-gray-600 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-box"></i>
+                    </div>
+                    <div>
+                        <span id="stat-standard" class="block text-2xl font-bold text-gray-900">--</span>
+                        <span class="text-xs text-gray-500 uppercase font-bold tracking-wider">Standard</span>
+                    </div>
+                </div>
+                <button onclick="openScanModal()"
+                    class="bg-brand-600 hover:bg-brand-700 text-white p-5 rounded-xl shadow-sm border border-brand-700 flex items-center justify-center gap-4 transition-all group hover:shadow-md cursor-pointer relative overflow-hidden">
+                    <div class="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity"></div>
+                    <i class="fa-solid fa-barcode text-3xl"></i>
+                    <div class="text-left">
+                        <span class="block text-xl font-bold">Start Order Scan</span>
+                        <span class="text-xs text-brand-100 uppercase font-bold tracking-wider opacity-80">Press
+                            F2</span>
+                    </div>
+                </button>
+            </div>
+
+            <!-- Resume Banner (Hidden by default) -->
+            <div id="resume-banner"
+                class="hidden bg-blue-50 border border-blue-100 p-4 rounded-xl flex items-center justify-between shrink-0 animate-fade-in shadow-sm">
+                <div class="flex items-center gap-3">
+                    <div
+                        class="w-10 h-10 bg-blue-100 text-brand-600 rounded-lg flex items-center justify-center animate-pulse">
+                        <i class="fa-solid fa-clock-rotate-left"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-gray-900">Order in Progress</h3>
+                        <p class="text-sm text-gray-500">Currently processing <span id="resume-id"
+                                class="font-bold font-mono text-gray-800">--</span></p>
+                    </div>
+                </div>
+                <button onclick="resumeOrder()"
+                    class="bg-brand-600 hover:bg-brand-700 text-white px-6 py-2 rounded-lg font-bold shadow-sm transition-all flex items-center gap-2">
+                    Resume Order <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </div>
+
+            <!-- Toolbar -->
+            <div class="flex flex-col gap-4 bg-white p-4 rounded-xl shadow-sm border border-gray-100 shrink-0">
+                <div class="flex items-center gap-4">
+                    <div class="flex-1 relative">
+                        <i
+                            class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                        <input type="text" id="dashboard-search" placeholder="Search Order #..."
+                            class="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-200 focus:ring-2 focus:ring-brand-500 outline-none font-medium">
+                    </div>
+                    <select id="filter-tag"
+                        class="px-4 py-2.5 rounded-lg border border-gray-200 focus:ring-2 focus:ring-brand-500 outline-none bg-white text-gray-700 font-medium">
+                        <option value="all">All Tags</option>
+                        <option value="VIP">VIP</option>
+                        <option value="Standard">Standard</option>
+                    </select>
+                    <button id="btn-clear-filters"
+                        class="text-gray-500 hover:text-gray-800 font-medium text-sm px-2">Clear</button>
+                </div>
+            </div>
+
+            <!-- Order Columns Container -->
+            <div class="flex-1 overflow-hidden relative min-h-0">
+                <!-- 13-Column Grid as requested: 8 (All) + 2 (Issue) + 3 (Exception) -->
+                <div class="grid grid-cols-[repeat(12,minmax(0,1fr))] gap-4 h-full">
+
+                    <!-- COLUMN 1: ALL ORDERS (Span 8) -->
+                    <div
+                        class="col-span-8 flex flex-col bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden h-full">
+                        <div
+                            class="px-4 py-3 border-b border-gray-100 bg-gray-50 flex justify-between items-center shrink-0">
+                            <h3 class="font-bold text-gray-700">All Orders</h3>
+                            <span id="badge-all"
+                                class="bg-gray-200 text-gray-600 px-2 py-0.5 rounded text-xs font-bold">0</span>
+                        </div>
+                        <!-- GRID VIEW for content: 2 cols on tablet, 3 on desktop, 4 on big screens -->
+                        <div id="col-all-orders"
+                            class="flex-1 overflow-y-auto p-3 bg-gray-50/50 grid grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-3 content-start">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+
+                    <!-- COLUMN 2: ISSUE ORDERS (Span 2) -->
+                    <div
+                        class="col-span-2 flex flex-col bg-yellow-50/50 rounded-xl shadow-sm border border-yellow-100 overflow-hidden h-full">
+                        <div
+                            class="px-4 py-3 border-b border-yellow-100 bg-yellow-50 flex justify-between items-center shrink-0">
+                            <h3 class="font-bold text-yellow-800 text-sm truncate">Issue Orders</h3>
+                            <span id="badge-issue"
+                                class="bg-yellow-200 text-yellow-800 px-2 py-0.5 rounded text-xs font-bold">0</span>
+                        </div>
+                        <div id="col-issue-orders" class="flex-1 overflow-y-auto p-2 space-y-2">
+                            <!-- Cards go here (List View) -->
+                        </div>
+                    </div>
+
+                    <!-- COLUMN 3: EXCEPTION ORDERS (Span 3) -->
+                    <div
+                        class="col-span-2 flex flex-col bg-red-50/50 rounded-xl shadow-sm border border-red-100 overflow-hidden h-full">
+                        <div
+                            class="px-4 py-3 border-b border-red-100 bg-red-50 flex justify-between items-center shrink-0">
+                            <h3 class="font-bold text-red-800 text-sm truncate">Exception Orders</h3>
+                            <span id="badge-exception"
+                                class="bg-red-200 text-red-800 px-2 py-0.5 rounded text-xs font-bold">0</span>
+                        </div>
+                        <div id="col-exception-orders" class="flex-1 overflow-y-auto p-2 space-y-2">
+                            <!-- Cards go here (List View) -->
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Pagination Removed -->
+        </main>
+
+        <!-- VIEW: ORDER PROCESSING (Wizard) -->
+        <main id="view-processing" class="flex-1 flex flex-col bg-gray-50 hidden">
+
+            <!-- Processing Header (Advanced) -->
+            <div class="bg-white border-b border-gray-200 shadow-sm shrink-0 z-30 sticky top-0 grid grid-cols-12 h-24">
+
+                <!-- Left: Identity Panel (Cols 4) -->
+                <div class="col-span-4 border-r border-gray-100 p-4 flex flex-col justify-center gap-2 relative overflow-hidden group"
+                    id="proc-header-left">
+                    <div class="flex items-center justify-between relative z-10">
+                        <div class="flex items-center gap-3">
+                            <h2 id="proc-order-id" class="text-3xl font-bold text-gray-900 tracking-tight">--</h2>
+                            <span id="proc-order-tag"
+                                class="px-2 py-0.5 rounded text-xs font-bold uppercase border">--</span>
+                        </div>
+                    </div>
+
+                    <!-- Box Info -->
+                    <div class="flex items-center gap-2 relative z-10 text-sm text-gray-500">
+                        <i class="fa-solid fa-box-open text-gray-400"></i>
+                        <span id="proc-box-size">Box: 8 x 8 x 4</span>
+                        <button onclick="openBoxModal()"
+                            class="text-xs text-brand-600 hover:text-brand-800 font-bold ml-1">Change</button>
+                    </div>
+
+                    <div class="flex items-center justify-between relative z-10">
+                        <div class="text-xs text-gray-500 flex items-center gap-3">
+                            <span id="proc-order-items" class="font-bold flex items-center gap-1"><i
+                                    class="fa-solid fa-layer-group"></i> -- items</span>
+                            <span class="text-gray-300">|</span>
+                            <span id="proc-order-time">--</span>
+                        </div>
+                    </div>
+
+                    <button id="btn-back-dashboard"
+                        class="absolute top-1/2 -translate-y-1/2 -left-3 bg-white border border-gray-200 rounded-full w-8 h-8 flex items-center justify-center shadow-sm text-gray-400 hover:text-brand-600 hover:border-brand-300 transition-all z-20">
+                        <i class="fa-solid fa-arrow-left"></i>
+                    </button>
+                </div>
+
+                <!-- Middle: Packer Info (Cols 3) -->
+                <div
+                    class="col-span-3 border-r border-gray-100 p-4 flex flex-col justify-center items-start pl-8 bg-gray-50/30">
+                    <p class="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">Packer</p>
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="w-8 h-8 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center font-bold text-xs border border-brand-200">
+                            AJ
+                        </div>
+                        <p id="proc-packer-name" class="font-bold text-gray-800 text-sm">--</p>
+                    </div>
+                </div>
+
+                <!-- Right: Interactive Steps (Cols 5) -->
+                <div class="col-span-5 flex items-center px-4 relative bg-gray-50/50">
+                    <div class="flex-1 flex items-center justify-between w-full max-w-4xl mx-auto">
+
+                        <!-- Step 1 Tab -->
+                        <button onclick="tryGoToStep(1)" id="step-tab-1"
+                            class="flex-1 flex flex-col items-center gap-2 group relative py-4 transition-all">
+                            <div class="flex items-center gap-2">
+                                <div
+                                    class="w-8 h-8 rounded-full bg-brand-600 text-white flex items-center justify-center font-bold text-sm shadow-sm ring-2 ring-white transition-colors item-circle">
+                                    1</div>
+                                <span
+                                    class="text-sm font-bold text-gray-700 group-hover:text-brand-700 transition-colors item-label">Scan
+                                    Products</span>
+                            </div>
+                            <div class="h-1 w-full bg-gray-200 mt-2 rounded-full overflow-hidden">
+                                <div class="h-full bg-brand-500 w-0 transition-all duration-300 item-bar"></div>
+                            </div>
+                            <!-- Validation Badge -->
+                            <div id="badge-step-1" class="absolute top-2 right-12 opacity-0 transition-opacity">
+                                <i class="fa-solid fa-circle-check text-green-500 bg-white rounded-full"></i>
+                            </div>
+                        </button>
+
+                        <!-- Connector -->
+                        <div id="step-connector-1-2" class="w-8 h-0.5 bg-gray-300 mx-2"></div>
+
+                        <!-- Step 2 Tab -->
+                        <button onclick="tryGoToStep(2)" id="step-tab-2"
+                            class="flex-1 flex flex-col items-center gap-2 group relative py-4 transition-all opacity-50 cursor-not-allowed">
+                            <div class="flex items-center gap-2">
+                                <div
+                                    class="w-8 h-8 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center font-bold text-sm shadow-sm ring-2 ring-white transition-colors item-circle">
+                                    2</div>
+                                <span
+                                    class="text-sm font-bold text-gray-500 group-hover:text-gray-700 transition-colors item-label">Capture
+                                    Weight</span>
+                            </div>
+                            <div class="h-1 w-full bg-gray-200 mt-2 rounded-full overflow-hidden">
+                                <div class="h-full bg-brand-500 w-0 transition-all duration-300 item-bar"></div>
+                            </div>
+                            <!-- Validation Badge -->
+                            <div id="badge-step-2" class="absolute top-2 right-12 opacity-0 transition-opacity">
+                                <i class="fa-solid fa-circle-check text-green-500 bg-white rounded-full"></i>
+                            </div>
+                        </button>
+
+                        <!-- Connector -->
+                        <div id="step-connector-2-3" class="w-8 h-0.5 bg-gray-300 mx-2"></div>
+
+                        <!-- Step 3 Tab -->
+                        <button onclick="tryGoToStep(3)" id="step-tab-3"
+                            class="flex-1 flex flex-col items-center gap-2 group relative py-4 transition-all opacity-50 cursor-not-allowed">
+                            <div class="flex items-center gap-2">
+                                <div
+                                    class="w-8 h-8 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center font-bold text-sm shadow-sm ring-2 ring-white transition-colors item-circle">
+                                    3</div>
+                                <span
+                                    class="text-sm font-bold text-gray-500 group-hover:text-gray-700 transition-colors item-label">Carrier
+                                    & Label</span>
+                            </div>
+                            <div class="h-1 w-full bg-gray-200 mt-2 rounded-full overflow-hidden">
+                                <div class="h-full bg-brand-500 w-0 transition-all duration-300 item-bar"></div>
+                            </div>
+                            <!-- Validation Badge -->
+                            <div id="badge-step-3" class="absolute top-2 right-12 opacity-0 transition-opacity">
+                                <i class="fa-solid fa-circle-check text-green-500 bg-white rounded-full"></i>
+                            </div>
+                        </button>
+
+                    </div>
+                </div>
+            </div>
+
+
+
+            <!-- ISSUE REPORTED BANNER -->
+            <div id="banner-issue-reported"
+                class="hidden bg-yellow-50 border-b border-yellow-200 p-4 flex items-center justify-between shrink-0 animate-fade-in relative z-20">
+                <div class="flex items-center gap-4">
+                    <div
+                        class="w-10 h-10 bg-yellow-100 text-yellow-600 rounded-lg flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-yellow-900">Reported Issue: <span id="banner-issue-type"
+                                class="uppercase">--</span></h3>
+                        <p class="text-xs text-yellow-700">Reported by <span id="banner-issue-by"
+                                class="font-bold">--</span> at <span id="banner-issue-at">--</span></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- WIZARD CONTENT -->
+            <div class="flex-1 overflow-hidden relative">
+
+                <!-- STEP 1: SCAN -->
+                <div id="step-1" class="absolute inset-0 p-6 flex gap-6 wizard-step">
+
+                    <!-- COL 1: UNSCANNED ITEMS (5/12) -->
+                    <div class="flex-[5] flex flex-col gap-4">
+                        <div
+                            class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col h-full">
+                            <div
+                                class="bg-gray-50 px-4 py-3 border-b border-gray-200 font-bold text-gray-700 flex justify-between items-center shrink-0">
+                                <span>All Products</span>
+                                <span class="text-xs text-gray-400 font-normal">Click to scan</span>
+                            </div>
+                            <div class="flex-1 overflow-y-auto p-2 space-y-2" id="list-unscanned">
+                                <!-- Populated by JS -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- COL 2: SCANNED ITEMS (5/12) -->
+                    <div class="flex-[5] flex flex-col gap-4">
+                        <div
+                            class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col h-full relative">
+                            <!-- Sticky Progress Bar -->
+                            <div
+                                class="bg-gray-50 px-5 py-4 border-b border-gray-200 shrink-0 sticky top-0 z-10 shadow-sm">
+                                <div class="flex justify-between items-end mb-2">
+                                    <span class="font-bold text-gray-400 text-xs uppercase tracking-widest">Scanning
+                                        Progress</span>
+                                    <span id="scan-progress-text"
+                                        class="text-2xl font-black text-brand-600 tracking-tight leading-none">0 /
+                                        0</span>
+                                </div>
+                                <div
+                                    class="h-5 w-full bg-gray-200 rounded-full overflow-hidden shadow-inner border border-gray-100">
+                                    <div id="scan-progress-bar"
+                                        class="h-full bg-blue-600 w-0 transition-all duration-300 relative overflow-hidden">
+                                        <div
+                                            class="absolute inset-0 bg-white/20 w-full h-full animate-[pulse_2s_infinite]">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex-1 overflow-y-auto p-4 space-y-3" id="list-scanned">
+                                <!-- Populated by JS -->
+                                <div class="flex flex-col items-center justify-center h-full text-gray-400">
+                                    <i class="fa-solid fa-barcode text-4xl mb-2 opacity-20"></i>
+                                    <p class="text-sm">No items scanned yet</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- COL 3: ACTIONS (2/12) -->
+                    <div class="flex-[2] flex flex-col gap-3">
+                        <div
+                            class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-col gap-3 h-full">
+                            <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Actions</h4>
+
+                            <button onclick="openIssueModal('exception')"
+                                class="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-3 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm shadow-sm">
+                                <i class="fa-solid fa-circle-exclamation"></i> Report Exception
+                            </button>
+
+                            <button onclick="openIssueModal()"
+                                class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-medium py-3 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm shadow-sm">
+                                <i class="fa-solid fa-triangle-exclamation"></i> Report Issue
+                            </button>
+
+                            <button onclick="openBoxModal()"
+                                class="w-full bg-gray-50 hover:bg-gray-100 text-gray-600 font-medium py-3 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm border border-gray-200">
+                                <i class="fa-solid fa-box-open"></i> Change Box
+                            </button>
+
+                            <button onclick="handleCancelOrder()"
+                                class="w-full bg-white hover:bg-gray-50 text-gray-500 font-medium py-3 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm border border-gray-200 mt-auto">
+                                <i class="fa-solid fa-xmark"></i> Cancel Order
+                            </button>
+
+                            <button id="btn-finish-scan"
+                                class="w-full bg-gray-100 text-gray-300 font-bold py-4 rounded-xl shadow-sm cursor-not-allowed transition-all mt-4"
+                                disabled>
+                                Complete <i class="fa-solid fa-arrow-right ml-1"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STEP 2: WEIGHT (3-Column Layout) -->
+                <div id="step-2" class="absolute inset-0 p-6 hidden wizard-step overflow-y-auto">
+                    <div class="grid grid-cols-12 gap-6 h-full max-h-[600px] m-auto w-full max-w-7xl">
+                        <!-- COLUMN 1: SYSTEM WEIGHT (5 Cols) -->
+                        <div
+                            class="col-span-5 bg-gray-100 rounded-2xl p-8 flex flex-col justify-center items-center border border-gray-200 shadow-inner">
+                            <h3 class="text-gray-500 font-bold uppercase tracking-wider text-sm mb-4">Expected Weight
+                            </h3>
+                            <div class="text-6xl font-black text-gray-400 mb-2">
+                                <span id="system-weight-display">--</span> <span
+                                    class="text-2xl text-gray-300">lbs</span>
+                            </div>
+                            <p class="text-sm text-gray-400 font-medium"><i
+                                    class="fa-solid fa-calculator mr-2"></i>Calculated from product weights</p>
+                        </div>
+
+                        <!-- COLUMN 2: CAPTURE WEIGHT (5 Cols) -->
+                        <div
+                            class="col-span-5 bg-white rounded-2xl p-8 flex flex-col justify-center items-center border-2 border-brand-100 shadow-lg relative overflow-hidden group hover:border-brand-300 transition-all">
+                            <h3 class="text-brand-600 font-bold uppercase tracking-wider text-sm mb-6">Captured Weight
+                            </h3>
+
+                            <div class="relative w-full max-w-[240px] mb-8">
+                                <input type="number" id="input-captured-weight"
+                                    class="w-full text-center text-6xl font-black text-gray-900 border-b-4 border-gray-200 focus:border-brand-500 outline-none py-2 bg-transparent transition-colors placeholder-gray-200"
+                                    placeholder="0.00" step="0.01">
+                                <span class="absolute right-0 bottom-6 text-2xl text-gray-400 font-bold">lbs</span>
+                            </div>
+
+                            <button id="btn-capture-scale"
+                                class="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-4 rounded-xl shadow-md transition-all active:scale-95 flex items-center justify-center gap-3 text-lg">
+                                <i class="fa-solid fa-scale-balanced"></i> Capture from Scale
+                            </button>
+
+                            <!-- Loading Overlay -->
+                            <div id="scale-loading"
+                                class="absolute inset-0 bg-white/95 flex flex-col items-center justify-center hidden z-10 backdrop-blur-sm">
+                                <i class="fa-solid fa-circle-notch fa-spin text-4xl text-brand-600 mb-3"></i>
+                                <span class="text-brand-600 font-bold text-lg animate-pulse">Reading Scale...</span>
+                            </div>
+                        </div>
+
+                        <!-- COLUMN 3: ACTIONS (2 Cols) -->
+                        <div class="col-span-2 flex flex-col gap-4">
+                            <!-- Status / Warning -->
+                            <div id="weight-status-card"
+                                class="bg-white border border-gray-200 rounded-2xl p-6 flex-1 flex flex-col items-center justify-center text-center transition-all shadow-sm">
+                                <div id="weight-match-indicator"
+                                    class="w-16 h-16 rounded-full bg-gray-50 text-gray-300 flex items-center justify-center text-2xl mb-4 transition-colors">
+                                    <i class="fa-solid fa-scale-unbalanced"></i>
+                                </div>
+                                <p id="weight-status-text" class="text-sm font-bold text-gray-400">Waiting for weight...
+                                </p>
+                            </div>
+
+                            <!-- Report Toggle -->
+                            <button id="btn-report-weight"
+                                class="w-full py-4 px-4 rounded-xl border-2 border-dashed border-gray-300 text-gray-400 font-bold text-xs hover:bg-gray-50 transition-all flex flex-col items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed group"
+                                disabled>
+                                <i
+                                    class="fa-solid fa-triangle-exclamation text-2xl group-hover:text-yellow-500 transition-colors"></i>
+                                Report Discrepancy
+                            </button>
+
+                            <!-- Next Button -->
+                            <button id="btn-confirm-weight"
+                                class="w-full bg-gray-100 text-gray-300 font-bold py-6 rounded-xl shadow-none transition-all cursor-not-allowed flex flex-col items-center justify-center gap-1"
+                                disabled>
+                                <span class="text-lg">Next</span>
+                                <i class="fa-solid fa-arrow-right"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Reporting Reason Input (Hidden by default) -->
+                    <div id="weight-report-panel"
+                        class="hidden absolute bottom-6 left-1/2 -translate-x-1/2 w-full max-w-lg bg-yellow-50 border border-yellow-200 rounded-xl p-4 shadow-xl animate-fade-in-up z-20">
+                        <div class="flex justify-between items-center mb-2">
+                            <label class="text-xs font-bold text-yellow-800 uppercase"><i
+                                    class="fa-solid fa-comment-dots mr-1"></i> Reason for Discrepancy</label>
+                            <button onclick="toggleWeightReport()" class="text-yellow-600 hover:text-yellow-800"><i
+                                    class="fa-solid fa-xmark"></i></button>
+                        </div>
+                        <textarea id="input-weight-reason" rows="2"
+                            class="w-full rounded-lg border-yellow-300 bg-white p-3 text-sm focus:ring-2 focus:ring-yellow-400 outline-none resize-none"
+                            placeholder="Briefly explain the difference..."></textarea>
+                    </div>
+                </div>
+
+                <!-- STEP 3: SHIPPING -->
+                <div id="step-3" class="absolute inset-0 p-6 flex gap-6 wizard-step hidden">
+                    <div class="flex-1 flex flex-col gap-6">
+                        <h3 class="text-xl font-bold text-gray-800">Select Carrier</h3>
+                        <div id="carrier-grid" class="grid grid-cols-2 gap-4">
+                            <!-- Carrier Cards Generated Here -->
+                        </div>
+                    </div>
+
+                    <div class="w-96 bg-white p-6 rounded-xl shadow-lg border border-gray-200 flex flex-col h-full">
+                        <h3 class="font-bold text-gray-800 mb-6 border-b pb-4">Shipment Summary</h3>
+
+                        <div class="space-y-4 mb-auto">
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-500">Order ID</span>
+                                <span id="summary-id" class="font-bold">--</span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-500">Weight</span>
+                                <span id="summary-weight" class="font-bold">-- kg</span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-500">Items</span>
+                                <span id="summary-items" class="font-bold">--</span>
+                            </div>
+                            <div class="border-t pt-4 mt-2">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-600 font-bold">Selected Carrier</span>
+                                </div>
+                                <div id="summary-carrier" class="text-sm text-gray-500 italic mt-1">None selected</div>
+                            </div>
+                        </div>
+
+                        <div id="shipping-actions" class="mt-6 space-y-3">
+                            <button id="btn-generate-label"
+                                class="w-full bg-gray-200 text-gray-400 font-bold py-3 rounded-lg cursor-not-allowed transition-all"
+                                disabled>
+                                Generate Label
+                            </button>
+                            <button id="btn-print-label"
+                                class="hidden w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-3 rounded-lg transition-all flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-print"></i> Print & Finish
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+
+        <!-- MODAL: SCAN START -->
+        <div id="modal-scan-start"
+            class="fixed inset-0 z-50 bg-black/50 flex items-center justify-center hidden opacity-0 transition-opacity duration-200">
+            <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-lg transform scale-95 transition-transform duration-200"
+                id="modal-scan-content">
+                <div class="flex justify-between items-start mb-6">
+                    <h2 class="text-2xl font-bold text-gray-900">Scan to Start</h2>
+                    <button class="text-gray-400 hover:text-gray-600" id="btn-close-scan-modal"><i
+                            class="fa-solid fa-xmark text-xl"></i></button>
+                </div>
+
+                <div class="relative mb-6">
+                    <input type="text" id="input-start-scan"
+                        class="w-full pl-4 pr-12 py-4 rounded-xl border-2 border-brand-500 focus:ring-4 focus:ring-brand-100 outline-none text-xl font-bold font-mono text-center text-gray-800"
+                        placeholder="Scan Order Barcode...">
+                    <button
+                        class="absolute right-3 top-1/2 -translate-y-1/2 bg-gray-100 hover:bg-gray-200 p-2 rounded-lg text-gray-600">
+                        <i class="fa-solid fa-barcode"></i>
+                    </button>
+                </div>
+
+                <p class="text-center text-gray-500 text-sm">Example: Type <strong>ORD-1001</strong> and press Enter</p>
+            </div>
+        </div>
+
+        <!-- MODAL: TUBE VALIDATION -->
+        <div id="modal-scan-tube"
+            class="fixed inset-0 z-[70] bg-black/50 flex items-center justify-center hidden opacity-0 transition-opacity duration-200">
+            <div
+                class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-lg transform scale-95 transition-transform duration-200">
+                <div class="flex justify-between items-start mb-6">
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-900">Scan Tube Serial Number</h2>
+                        <p class="text-sm text-gray-500 mt-1">Tube product requires validation.</p>
+                    </div>
+                    <button onclick="closeTubeModal()" class="text-gray-400 hover:text-gray-600"><i
+                            class="fa-solid fa-xmark text-xl"></i></button>
+                </div>
+
+                <div class="relative mb-6">
+                    <input type="text" id="input-tube-serial"
+                        class="w-full pl-4 pr-12 py-4 rounded-xl border-2 border-purple-500 focus:ring-4 focus:ring-purple-100 outline-none text-xl font-bold font-mono text-center text-gray-800"
+                        placeholder="Scan Serial Number...">
+                    <div class="absolute right-3 top-1/2 -translate-y-1/2 text-purple-500">
+                        <i class="fa-solid fa-barcode text-xl"></i>
+                    </div>
+                </div>
+
+                <!-- Validation Status -->
+                <div id="tube-validating-ui" class="hidden flex flex-col items-center justify-center py-4 mb-4">
+                    <i class="fa-solid fa-circle-notch fa-spin text-3xl text-purple-600 mb-2"></i>
+                    <span class="font-bold text-purple-700 animate-pulse">Validating Serial Number...</span>
+                </div>
+
+                <div class="flex gap-3">
+                    <button onclick="closeTubeModal()"
+                        class="flex-1 px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl transition-colors">
+                        Cancel
+                    </button>
+                    <button onclick="validateTube()"
+                        class="flex-[2] px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl shadow-md transition-all">
+                        Validate <i class="fa-solid fa-check ml-1"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- MODAL: EDIT BOX -->
+    <div id="modal-edit-box"
+        class="fixed inset-0 z-50 bg-black/50 flex items-center justify-center hidden opacity-0 transition-opacity duration-200">
+        <div
+            class="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-sm transform scale-95 transition-transform duration-200">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-gray-900">Select Box Size</h3>
+                <button onclick="closeBoxModal()" class="text-gray-400 hover:text-gray-600"><i
+                        class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="space-y-2">
+                <button onclick="selectBox('8 x 8 x 4')"
+                    class="w-full text-left px-4 py-3 rounded-xl border border-gray-200 hover:border-brand-500 hover:bg-brand-50 flex justify-between items-center group transition-all">
+                    <span class="font-bold text-gray-700 group-hover:text-brand-700">8 x 8 x 4</span>
+                    <span class="text-xs text-gray-400">Standard Small</span>
+                </button>
+                <button onclick="selectBox('8 x 6 x 4')"
+                    class="w-full text-left px-4 py-3 rounded-xl border border-gray-200 hover:border-brand-500 hover:bg-brand-50 flex justify-between items-center group transition-all">
+                    <span class="font-bold text-gray-700 group-hover:text-brand-700">8 x 6 x 4</span>
+                    <span class="text-xs text-gray-400">Flat Small</span>
+                </button>
+                <button onclick="selectBox('10 x 8 x 6')"
+                    class="w-full text-left px-4 py-3 rounded-xl border border-gray-200 hover:border-brand-500 hover:bg-brand-50 flex justify-between items-center group transition-all">
+                    <span class="font-bold text-gray-700 group-hover:text-brand-700">10 x 8 x 6</span>
+                    <span class="text-xs text-gray-400">Medium</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: ISSUE REPORT (Generic) -->
+    <div id="modal-issue-report"
+        class="fixed inset-0 z-[60] bg-black/50 flex items-center justify-center hidden opacity-0 transition-opacity duration-200">
+        <div
+            class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md transform scale-95 transition-transform duration-200">
+            <div class="text-center mb-6">
+                <div id="issue-modal-icon"
+                    class="w-16 h-16 bg-yellow-50 text-yellow-500 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <h2 id="issue-modal-title" class="text-2xl font-bold text-gray-900">Report Issue</h2>
+                <p id="issue-modal-subtitle" class="text-gray-500 mt-2">Select the type of issue encountered.</p>
+            </div>
+
+            <form id="form-issue-report" class="space-y-3">
+                <!-- No Issue Option (Hidden by default for Report Issue flow) -->
+                <label id="opt-no-issue"
+                    class="flex items-center gap-4 p-4 rounded-xl border border-gray-200 cursor-pointer hover:border-brand-500 hover:bg-brand-50/30 transition-all group hidden">
+                    <input type="radio" name="issue-type" value="none"
+                        class="w-5 h-5 text-brand-600 focus:ring-brand-500 border-gray-300">
+                    <div class="flex-1">
+                        <span class="block font-bold text-gray-900">No Issues</span>
+                        <span class="text-xs text-gray-500">Everything matches perfectly</span>
+                    </div>
+                    <i class="fa-solid fa-check text-green-500 text-xl"></i>
+                </label>
+
+                <!-- Issue Options Group -->
+                <div id="grp-issue-options" class="space-y-3">
+                    <label
+                        class="flex items-center gap-4 p-4 rounded-xl border border-gray-200 cursor-pointer hover:border-red-500 hover:bg-red-50/30 transition-all group">
+                        <input type="radio" name="issue-type" value="oos"
+                            class="w-5 h-5 text-red-600 focus:ring-red-500 border-gray-300">
+                        <div class="flex-1">
+                            <span class="block font-bold text-gray-900 group-hover:text-red-700">Out of Stock
+                                (OOS)</span>
+                            <span class="text-xs text-gray-500">Item missing from bin</span>
+                        </div>
+                        <i class="fa-solid fa-box-open text-gray-300 group-hover:text-red-400"></i>
+                    </label>
+
+                    <label
+                        class="flex items-center gap-4 p-4 rounded-xl border border-gray-200 cursor-pointer hover:border-red-500 hover:bg-red-50/30 transition-all group">
+                        <input type="radio" name="issue-type" value="damaged"
+                            class="w-5 h-5 text-red-600 focus:ring-red-500 border-gray-300">
+                        <div class="flex-1">
+                            <span class="block font-bold text-gray-900 group-hover:text-red-700">Damaged Product</span>
+                            <span class="text-xs text-gray-500">Item is damaged/broken</span>
+                        </div>
+                        <i class="fa-solid fa-burst text-gray-300 group-hover:text-red-400"></i>
+                    </label>
+
+                    <label
+                        class="flex items-center gap-4 p-4 rounded-xl border border-gray-200 cursor-pointer hover:border-red-500 hover:bg-red-50/30 transition-all group">
+                        <input type="radio" name="issue-type" value="wrong-product"
+                            class="w-5 h-5 text-red-600 focus:ring-red-500 border-gray-300">
+                        <div class="flex-1">
+                            <span class="block font-bold text-gray-900 group-hover:text-red-700">Wrong Product</span>
+                            <span class="text-xs text-gray-500">Barcode/Item mismatch</span>
+                        </div>
+                        <i class="fa-solid fa-tag text-gray-300 group-hover:text-red-400"></i>
+                    </label>
+
+                    <label
+                        class="flex items-center gap-4 p-4 rounded-xl border border-gray-200 cursor-pointer hover:border-red-500 hover:bg-red-50/30 transition-all group">
+                        <input type="radio" name="issue-type" value="duplicate-tube"
+                            class="w-5 h-5 text-red-600 focus:ring-red-500 border-gray-300">
+                        <div class="flex-1">
+                            <span class="block font-bold text-gray-900 group-hover:text-red-700">Duplicate Tube
+                                Sr#</span>
+                            <span class="text-xs text-gray-500">Serial number already used</span>
+                        </div>
+                        <i class="fa-solid fa-clone text-gray-300 group-hover:text-red-400"></i>
+                    </label>
+
+                    <label
+                        class="flex items-center gap-4 p-4 rounded-xl border border-gray-200 cursor-pointer hover:border-red-500 hover:bg-red-50/30 transition-all group">
+                        <input type="radio" name="issue-type" value="other"
+                            class="w-5 h-5 text-red-600 focus:ring-red-500 border-gray-300">
+                        <div class="flex-1">
+                            <span class="block font-bold text-gray-900 group-hover:text-red-700">Other Issue</span>
+                            <span class="text-xs text-gray-500">Requires manual review</span>
+                        </div>
+                        <i class="fa-solid fa-circle-question text-gray-300 group-hover:text-red-400"></i>
+                    </label>
+                </div>
+
+                <!-- Exception Options Group (Hidden by default) -->
+                <div id="grp-exception-options" class="space-y-3 hidden">
+                    <label
+                        class="flex items-center gap-4 p-4 rounded-xl border border-gray-200 cursor-pointer hover:border-red-500 hover:bg-red-50/30 transition-all group">
+                        <input type="radio" name="issue-type" value="address-issue"
+                            class="w-5 h-5 text-red-600 focus:ring-red-500 border-gray-300">
+                        <div class="flex-1">
+                            <span class="block font-bold text-gray-900 group-hover:text-red-700">Address Issue</span>
+                            <span class="text-xs text-gray-500">Invalid or missing address</span>
+                        </div>
+                        <i class="fa-solid fa-map-location-dot text-gray-300 group-hover:text-red-400"></i>
+                    </label>
+
+
+
+                    <label
+                        class="flex items-center gap-4 p-4 rounded-xl border border-gray-200 cursor-pointer hover:border-red-500 hover:bg-red-50/30 transition-all group">
+                        <input type="radio" name="issue-type" value="other-exception"
+                            class="w-5 h-5 text-red-600 focus:ring-red-500 border-gray-300">
+                        <div class="flex-1">
+                            <span class="block font-bold text-gray-900 group-hover:text-red-700">Other Exception</span>
+                            <span class="text-xs text-gray-500">Requires manager review</span>
+                        </div>
+                        <i class="fa-solid fa-gavel text-gray-300 group-hover:text-red-400"></i>
+                    </label>
+                </div>
+
+
+                <div class="pt-4 flex gap-3">
+                    <button type="button" onclick="closeIssueModal()"
+                        class="flex-1 px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl transition-colors">Cancel</button>
+                    <button type="submit"
+                        class="flex-[2] px-4 py-3 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl shadow-md transition-all">Submit</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // --- DATA & STATE ---
+        const state = {
+            orders: [],
+            // pagination: { page: 1, limit: 12 }, // Removed
+            activeOrder: null,
+            step: 1,
+            carriers: [
+                { id: 'c1', name: 'DHL Express', method: 'Next Day', price: 12.50, eta: 'Tomorrow, 10:00 AM', tags: ['Fastest'] },
+                { id: 'c2', name: 'FedEx Ground', method: 'Standard', price: 5.95, eta: '3 Days', tags: ['Cheapest'] },
+                { id: 'c3', name: 'UPS Saver', method: '2-Day', price: 8.20, eta: '2 Days', tags: ['Recommended'] },
+                { id: 'c4', name: 'Local Courier', method: 'Same Day', price: 25.00, eta: 'Today, 6:00 PM', tags: [] }
+            ]
+        };
+
+        // --- MOCK DATA GENERATORS ---
+        function generateData() {
+            const productPool = [
+                { name: 'Wireless Headphones', sku: 'WH-500', isTube: false },
+                { name: 'USB-C Cable (2m)', sku: 'CB-200', isTube: false },
+                { name: 'Smart Watch Gen 5', sku: 'SW-005', isTube: false },
+                { name: 'Laptop Stand', sku: 'LS-100', isTube: false },
+                { name: 'Mechanical Keyboard', sku: 'MK-88', isTube: false },
+                { name: 'Ergo Mouse', sku: 'EM-40', isTube: false },
+                { name: 'Monitor Arm', sku: 'MA-22', isTube: false },
+                { name: 'Webcam 1080p', sku: 'WC-10', isTube: false },
+                { name: 'Tube', sku: 'TUBE-001', isTube: true, validationStatus: 'success' } // Default template
+            ];
+
+            // Generated Random Orders
+            const randomOrders = Array.from({ length: 50 }, (_, i) => {
+                const id = `ORD-${1005 + i}`;
+                const isVIP = Math.random() > 0.8;
+                const itemCount = Math.floor(Math.random() * 5) + 1;
+                const created = new Date(Date.now() - Math.floor(Math.random() * 86400000)).toLocaleString();
+
+                // Determine Status
+                const rand = Math.random();
+                let status = 'normal';
+                if (rand > 0.95) status = 'exception';
+                else if (rand > 0.85) status = 'issue';
+
+                // Generate Products
+                const products = [];
+                for (let j = 0; j < itemCount; j++) {
+                    const template = productPool[Math.floor(Math.random() * productPool.length)];
+                    const qty = Math.floor(Math.random() * 2) + 1;
+                    // Mock validation status for random orders if tube selected
+                    const validation = template.isTube ? (Math.random() > 0.8 ? 'error' : 'success') : null;
+
+                    products.push({
+                        ...template,
+                        expectedQty: qty,
+                        scannedQty: 0,
+                        validationStatus: validation,
+                        serialNumber: null
+                    });
+                }
+
+                return {
+                    id,
+                    isVIP,
+                    tag: isVIP ? 'VIP' : 'STD',
+                    totalItems: products.reduce((sum, p) => sum + p.expectedQty, 0),
+                    created,
+                    products,
+                    weight: null,
+                    carrier: null,
+                    status: status,
+                    isPaused: false,
+                    isFlagged: status !== 'normal',
+                    isEscalated: status === 'exception',
+                    boxSize: '8 x 8 x 4',
+                    type: Math.random() > 0.8 ? 'internal' : 'customer',
+                    packer: "Alex Johnson",
+                    systemWeight: (Math.random() * 5 + 0.5).toFixed(2),
+                    weightReported: false
+                };
+            });
+
+            // Specific Test Scenarios
+            const testOrders = [
+                // 1. HAPPY PATH TUBE
+                {
+                    id: "ORD-TUBE-1001",
+                    isVIP: true,
+                    tag: "VIP",
+                    created: new Date().toLocaleString(),
+                    status: 'normal',
+                    isPaused: false,
+                    isFlagged: false,
+                    isEscalated: false,
+                    boxSize: '10 x 8 x 6',
+                    type: 'customer',
+                    packer: "Sarah Smith",
+                    systemWeight: "1.25",
+                    weightReported: false,
+                    products: [
+                        { name: "Tube", sku: "TUBE-001", expectedQty: 1, scannedQty: 0, isTube: true, validationStatus: "success", serialNumber: null },
+                        { name: "Widget A", sku: "WIDGET-A", expectedQty: 2, scannedQty: 0, isTube: false }
+                    ]
+                },
+                // 2. EXCEPTION PATH TUBE
+                {
+                    id: "ORD-TUBE-1002",
+                    isVIP: false,
+                    tag: "STD",
+                    created: new Date().toLocaleString(),
+                    status: 'normal',
+                    isPaused: false,
+                    isFlagged: false,
+                    isEscalated: false,
+                    boxSize: '8 x 8 x 4',
+                    type: 'customer',
+                    packer: "Mike Jones",
+                    systemWeight: "0.85",
+                    weightReported: false,
+                    products: [
+                        { name: "Tube", sku: "TUBE-002", expectedQty: 1, scannedQty: 0, isTube: true, validationStatus: "error", serialNumber: null }
+                    ]
+                },
+                // 3. INTERNAL ORDER WITH TUBE
+                {
+                    id: "ORD-INT-TUBE-1003",
+                    isVIP: false,
+                    tag: "INTERNAL",
+                    created: new Date().toLocaleString(),
+                    status: 'normal',
+                    isPaused: false,
+                    isFlagged: false,
+                    isEscalated: false,
+                    boxSize: '12 x 12 x 8',
+                    type: 'internal',
+                    packer: "Admin User",
+                    systemWeight: "2.50",
+                    weightReported: false,
+                    products: [
+                        { name: "Tube", sku: "TUBE-INT-003", expectedQty: 2, scannedQty: 0, isTube: true, validationStatus: "success", serialNumber: null },
+                        { name: "Office Supplies", sku: "OFF-001", expectedQty: 5, scannedQty: 0, isTube: false }
+                    ]
+                },
+                // 4. NORMAL ORDER
+                {
+                    id: "ORD-NORMAL-1004",
+                    isVIP: false,
+                    tag: "STD-SAVER",
+                    created: new Date().toLocaleString(),
+                    status: 'normal',
+                    isPaused: false,
+                    isFlagged: false,
+                    isEscalated: false,
+                    boxSize: '8 x 6 x 4',
+                    type: 'customer',
+                    packer: "Alex Johnson",
+                    systemWeight: "0.45",
+                    weightReported: false,
+                    products: [
+                        { name: "Standard Item", sku: "STD-001", expectedQty: 1, scannedQty: 0, isTube: false }
+                    ]
+                }
+            ];
+
+            // Recalculate totals for test orders
+            testOrders.forEach(o => {
+                o.totalItems = o.products.reduce((sum, p) => sum + p.expectedQty, 0);
+            });
+
+            state.orders = [...testOrders, ...randomOrders];
+            renderDashboard();
+            updateStats();
+        }
+
+        // --- ISSUE REPORTING & MODAL LOGIC ---
+        let currentModalMode = 'report'; // 'report', 'exception', 'complete'
+
+        function openIssueModal(mode = 'report') {
+            const modal = document.getElementById('modal-issue-report');
+            const form = document.getElementById('form-issue-report');
+            const noIssueOpt = document.getElementById('opt-no-issue');
+            const grpIssues = document.getElementById('grp-issue-options');
+            const grpExceptions = document.getElementById('grp-exception-options');
+            const title = document.getElementById('issue-modal-title');
+            const subtitle = document.getElementById('issue-modal-subtitle');
+            const icon = document.getElementById('issue-modal-icon');
+
+            // Reset Form and State
+            form.reset();
+            currentModalMode = mode;
+
+            // hide all first
+            noIssueOpt.classList.add('hidden');
+            if (grpIssues) grpIssues.classList.add('hidden');
+            if (grpExceptions) grpExceptions.classList.add('hidden');
+
+            // Configure UI based on Mode
+            if (mode === 'complete') {
+                // specific logic for complete
+                noIssueOpt.classList.remove('hidden');
+                if (grpIssues) grpIssues.classList.remove('hidden');
+                form.querySelector('input[value="none"]').checked = true;
+
+                title.textContent = "Scan Complete";
+                subtitle.textContent = "Report any issues found during packing.";
+                icon.className = "w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl";
+                icon.innerHTML = '<i class="fa-solid fa-clipboard-check"></i>';
+            }
+            else if (mode === 'exception') {
+                if (grpExceptions) grpExceptions.classList.remove('hidden');
+
+                title.textContent = "Report Exception";
+                subtitle.textContent = "Select the exception type.";
+                icon.className = "w-16 h-16 bg-red-50 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl";
+                icon.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i>';
+            }
+            else {
+                // Default to 'report' (Standard Issue)
+                if (grpIssues) grpIssues.classList.remove('hidden');
+
+                title.textContent = "Report Issue";
+                subtitle.textContent = "Select the type of issue encountered.";
+                icon.className = "w-16 h-16 bg-yellow-50 text-yellow-500 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl";
+                icon.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
+            }
+
+            modal.classList.remove('hidden');
+            setTimeout(() => modal.classList.remove('opacity-0'), 10);
+        }
+
+        function closeIssueModal() {
+            const modal = document.getElementById('modal-issue-report');
+            modal.classList.add('opacity-0');
+            setTimeout(() => modal.classList.add('hidden'), 200);
+        }
+
+        document.getElementById('form-issue-report').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const issueType = formData.get('issue-type');
+
+            if (currentModalMode === 'report' || currentModalMode === 'exception') {
+                if (!issueType || issueType === 'none') {
+                    toast('Please select an option', 'error');
+                    return;
+                }
+                handleIssueReport(issueType);
+            } else {
+                // Complete Flow
+                if (issueType !== 'none') {
+                    console.log(`Reported Issue during completion: ${issueType}`);
+                    // toast(`Issue Reported: ${issueType.toUpperCase()}`, 'warning');
+                    // Treat as issue report if an issue is selected during completion
+                    handleIssueReport(issueType);
+                    return;
+                }
+                proceedAfterScan();
+                closeIssueModal();
+            }
+        });
+
+        function handleIssueReport(type) {
+            const o = state.activeOrder;
+            if (!o) return;
+
+            // 1. Update Metadata
+            o.issueReported = true;
+            o.issueType = type;
+            o.issueReportedBy = "Groover 01"; // Mock
+            o.issueReportedAt = new Date(); // Timestamp object for sorting
+            o.status = 'issue'; // Explicit set to issue
+
+            // 2. Remove from In Progress (Clear active)
+            state.activeOrder = null;
+
+            // 3. Redirect to Dashboard
+            closeIssueModal();
+            views.processing.classList.add('hidden');
+            views.dashboard.classList.remove('hidden');
+
+            renderDashboard(); // Will handle sorting
+            toast(`Order moved to Issue List: ${type}`, 'warning');
+        }
+
+        function proceedAfterScan() {
+            const o = state.activeOrder;
+            if (o.type === 'internal') {
+                // Complete Internal Order
+                toast('Order Completed Successfully!');
+                // Remove from list
+                removeFromList(o.id);
+                // Return to dashboard
+                views.processing.classList.add('hidden');
+                views.dashboard.classList.remove('hidden');
+                state.activeOrder = null;
+                renderDashboard();
+                updateStats();
+            } else {
+                // Proceed to Customer Step 2
+                window.tryGoToStep(2);
+            }
+        }
+
+        function removeFromList(id) {
+            state.orders = state.orders.filter(ord => ord.id !== id);
+        }
+
+        // --- BOX MODAL LOGIC ---
+        function openBoxModal() {
+            document.getElementById('modal-edit-box').classList.remove('hidden');
+            setTimeout(() => document.getElementById('modal-edit-box').classList.remove('opacity-0'), 10);
+        }
+
+        function closeBoxModal() {
+            document.getElementById('modal-edit-box').classList.add('opacity-0');
+            setTimeout(() => document.getElementById('modal-edit-box').classList.add('hidden'), 200);
+        }
+
+        function selectBox(size) {
+            if (state.activeOrder) {
+                state.activeOrder.boxSize = size;
+                document.getElementById('proc-box-size').textContent = `Box: ${size}`;
+                toast(`Box set to ${size}`);
+            }
+            closeBoxModal();
+        }
+
+        // --- DOM ELEMENTS ---
+        const views = {
+            login: document.getElementById('view-login'),
+            app: document.getElementById('view-app'),
+            dashboard: document.getElementById('view-dashboard'),
+            processing: document.getElementById('view-processing')
+        };
+        const items = {
+            grid: document.getElementById('orders-grid'),
+            loginForm: document.getElementById('login-form'),
+            searchInput: document.getElementById('dashboard-search'),
+            filterTag: document.getElementById('filter-tag'),
+            filterInput: document.getElementById('dashboard-search'),
+            paginationInfo: document.getElementById('pagination-info'),
+            btnPrev: document.getElementById('btn-prev-page'),
+            btnNext: document.getElementById('btn-next-page'),
+            modalScan: document.getElementById('modal-scan-start'),
+            inputScanStart: document.getElementById('input-start-scan'),
+            btnCloseScan: document.getElementById('btn-close-scan-modal'),
+            // Processing
+            scanLog: document.getElementById('scan-log'),
+            scanProgress: document.getElementById('scan-progress-text'),
+            // Processing - Step 1
+            // inputScanProd & scanList removed in restructure
+            // btnFinishScan: document.getElementById('btn-finish-scan'), // Dynamic in new layout
+            weightDisplay: document.getElementById('weight-display'),
+            btnCaptureWeight: document.getElementById('btn-capture-weight'),
+            carrierGrid: document.getElementById('carrier-grid'),
+            btnGenerateLabel: document.getElementById('btn-generate-label'),
+            btnPrintLabel: document.getElementById('btn-print-label'),
+            // Header Elements
+            procId: document.getElementById('proc-order-id'),
+            procTag: document.getElementById('proc-order-tag'),
+            procTime: document.getElementById('proc-order-time'),
+            procItems: document.getElementById('proc-order-items'),
+            // Summary Elements
+            summaryId: document.getElementById('summary-id'),
+            summaryWeight: document.getElementById('summary-weight'),
+            summaryItems: document.getElementById('summary-items'),
+            summaryCarrier: document.getElementById('summary-carrier')
+        };
+
+        // --- DASHBOARD LOGIC ---
+        function renderDashboard() {
+            const search = items.searchInput.value.toLowerCase();
+            const tagFilter = items.filterTag.value;
+
+            // Filter main list
+            const filtered = state.orders.filter(o => {
+                const matchesSearch = o.id.toLowerCase().includes(search);
+                const matchesTag = tagFilter === 'all' || o.tag === tagFilter;
+                return matchesSearch && matchesTag;
+            });
+
+            // Categorize
+            const allOrders = filtered.filter(o => o.status === 'normal');
+            const issueOrders = filtered.filter(o => o.status === 'issue');
+            const exceptionOrders = filtered.filter(o => o.status === 'exception');
+
+            // Update Badges
+            document.getElementById('badge-all').textContent = allOrders.length;
+            document.getElementById('badge-issue').textContent = issueOrders.length;
+            document.getElementById('badge-exception').textContent = exceptionOrders.length;
+
+            // Render Columns
+            renderColumn('col-all-orders', allOrders, 'normal');
+            renderColumn('col-issue-orders', issueOrders, 'issue');
+            renderColumn('col-exception-orders', exceptionOrders, 'exception');
+
+            updateStats();
+            checkResumeBanner();
+        }
+
+        function renderColumn(containerId, orders, type) {
+            const container = document.getElementById(containerId);
+            if (!container) return; // safety
+
+            container.innerHTML = orders.map(o => createOrderCard(o)).join('');
+        }
+
+        function createOrderCard(o) {
+            // Visual Styles based on Status
+            let bgClass = 'bg-white hover:border-brand-300 border-gray-200';
+            let statusIcon = '';
+
+            if (o.status === 'issue') {
+                bgClass = 'bg-yellow-50 hover:bg-yellow-100 border-yellow-200 hover:border-yellow-400';
+                statusIcon = '<i class="fa-solid fa-triangle-exclamation text-yellow-500 mr-1"></i>';
+            } else if (o.status === 'exception') {
+                bgClass = 'bg-red-50 hover:bg-red-100 border-red-200 hover:border-red-400';
+                statusIcon = '<i class="fa-solid fa-circle-exclamation text-red-500 mr-1"></i>';
+            }
+
+            // Tube Check
+            const hasTube = o.products.some(p => p.isTube);
+            const tubeBadge = hasTube
+                ? '<span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-purple-500 text-white ml-1 shadow-sm" title="Requires Serial Number Scan">TUBE <i class="fa-solid fa-flask ml-0.5 text-[9px]"></i></span>'
+                : '';
+
+            // Internal Check
+            const internalBadge = o.type === 'internal'
+                ? '<div class="absolute top-0 right-0 border-t-[20px] border-t-gray-700 border-l-[20px] border-l-transparent rounded-tr-lg z-10"></div><span class="absolute top-0.5 right-1 text-[8px] font-bold text-white z-20"><i class="fa-solid fa-building"></i></span>'
+                : '';
+
+            // Internal Highlighting
+            const internalClass = o.type === 'internal' ? 'border-l-4 border-l-gray-700' : '';
+
+            // Compact Card HTML
+            return `
+                <div onclick="startProcessing('${o.id}')" 
+                     class="${bgClass} ${internalClass} p-3 rounded-lg shadow-sm border cursor-pointer transition-all group relative overflow-visible">
+                    ${internalBadge}
+                    
+                    <!-- Row 1: Header -->
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="font-bold text-gray-800 text-sm flex items-center gap-1">${statusIcon}${o.id} ${tubeBadge}</span>
+                        <span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase border ${o.isVIP ? 'bg-orange-100 text-orange-700 border-orange-200' : 'bg-gray-100 text-gray-500 border-gray-200'}">
+                            ${o.tag}
+                        </span>
+                    </div>
+
+                    <!-- Row 2: Stats (Linear) -->
+                    <div class="flex justify-between items-center text-xs text-gray-500">
+                        <div class="flex items-center gap-1">
+                            <i class="fa-solid fa-layer-group text-gray-400"></i> 
+                            <span class="font-bold text-gray-700">${o.totalItems}</span> items
+                        </div>
+                        <div class="w-1 h-1 rounded-full bg-gray-300"></div>
+                        <div class="flex items-center gap-1">
+                            <i class="fa-regular fa-clock text-gray-400"></i> ${o.created.split(',')[1].trim().replace(':00 ', ' ')}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function checkResumeBanner() {
+            const banner = document.getElementById('resume-banner');
+            if (state.activeOrder && !views.dashboard.classList.contains('hidden')) {
+                banner.classList.remove('hidden');
+                document.getElementById('resume-id').textContent = state.activeOrder.id;
+            } else {
+                banner.classList.add('hidden');
+            }
+        }
+
+        function updateStats() {
+            document.getElementById('stat-total').textContent = state.orders.length;
+            document.getElementById('stat-vip').textContent = state.orders.filter(o => o.isVIP).length;
+            document.getElementById('stat-standard').textContent = state.orders.filter(o => !o.isVIP).length;
+        }
+
+        function resumeOrder() {
+            if (state.activeOrder) {
+                views.dashboard.classList.add('hidden');
+                views.processing.classList.remove('hidden');
+                renderProcessing();
+            }
+        }
+
+        // --- SCAN LOGIC ---
+        window.openScanModal = (prefillId = '') => {
+            if (state.activeOrder) {
+                toast('Finish current order first!', 'warning');
+                return;
+            }
+            items.modalScan.classList.remove('hidden');
+            setTimeout(() => items.modalScan.classList.remove('opacity-0'), 10);
+
+            if (prefillId) {
+                items.inputScanStart.value = prefillId;
+                items.inputScanStart.focus();
+            } else {
+                items.inputScanStart.value = '';
+                items.inputScanStart.focus();
+            }
+        };
+
+        function closeScanModal() {
+            items.modalScan.classList.add('opacity-0');
+            setTimeout(() => items.modalScan.classList.add('hidden'), 200);
+        }
+
+        function startProcessing(orderId) {
+            const order = state.orders.find(o => o.id === orderId);
+            if (!order) {
+                toast('Invalid Order ID', 'error');
+                items.inputScanStart.parentElement.classList.add('animate-shake');
+                setTimeout(() => items.inputScanStart.parentElement.classList.remove('animate-shake'), 500);
+                return;
+            }
+
+            state.activeOrder = order;
+            state.step = 1;
+            closeScanModal();
+            renderProcessing();
+
+            views.dashboard.classList.add('hidden');
+            views.processing.classList.remove('hidden');
+            // items.inputScanProd.focus(); // Removed as element no longer exists (Click-to-Scan)
+        }
+
+        // --- STEP NAVIGATION ---
+        window.tryGoToStep = (step) => {
+            if (step === state.step) return;
+            const o = state.activeOrder;
+
+            // Validation Rules
+            const step1Complete = o.products.every(p => p.scannedQty >= p.expectedQty);
+            const step2Complete = !!o.weight;
+
+            if (step === 2 && !step1Complete) {
+                toast('Complete scanning all products first!', 'error');
+                return;
+            }
+            if (step === 3 && (!step1Complete || !step2Complete)) {
+                toast('Complete weight capture first!', 'error');
+                return;
+            }
+            if (step > 3) return; // invalid
+
+            // Allow navigation if valid
+            state.step = step;
+            renderProcessing();
+        };
+
+        // --- PROCESSING LOGIC ---
+        function renderProcessing() {
+            const o = state.activeOrder;
+            if (!o) return;
+
+            // Header
+            items.procId.textContent = o.id;
+            items.procId.className = `text-2xl font-black text-gray-900`;
+
+            // Add Type Badge to Header
+            const typeBadge = o.type === 'internal'
+                ? '<span class="ml-2 px-2 py-0.5 rounded text-xs font-bold uppercase bg-purple-100 text-purple-700 border border-purple-200 align-middle">Internal</span>'
+                : '<span class="ml-2 px-2 py-0.5 rounded text-xs font-bold uppercase bg-blue-50 text-blue-600 border border-blue-100 align-middle">Customer</span>';
+
+            items.procId.innerHTML = o.id + typeBadge;
+
+            items.procTag.textContent = o.tag;
+            items.procTag.className = `px-2 py-0.5 rounded text-xs font-bold uppercase border ml-2 ${o.isVIP ? 'bg-orange-50 text-orange-700 border-orange-200' : 'bg-gray-100 text-gray-600 border-gray-200'}`;
+            items.procTime.textContent = o.created;
+            items.procItems.innerHTML = `<i class="fa-solid fa-layer-group"></i> ${o.totalItems} items`;
+
+            // Packer Info
+            const packerEl = document.getElementById('proc-packer-name');
+            if (packerEl) packerEl.textContent = o.packer || 'Unassigned';
+
+            // Box Info
+            document.getElementById('proc-box-size').textContent = `Box: ${o.boxSize}`;
+
+            // Reset UI states if re-rendering
+            // (Paused/Flagged/Escalated logic removed)
+
+            // Issue Banner Logic
+            const issueBanner = document.getElementById('banner-issue-reported');
+            if (o.issueReported) {
+                issueBanner.classList.remove('hidden');
+                document.getElementById('banner-issue-type').textContent = o.issueType;
+                document.getElementById('banner-issue-by').textContent = o.issueReportedBy || 'Unknown';
+                document.getElementById('banner-issue-at').textContent = o.issueReportedAt ? new Date(o.issueReportedAt).toLocaleString() : '--';
+            } else {
+                issueBanner.classList.add('hidden');
+            }
+
+            // Navigation Tabs Logic (Internal vs Customer)
+            const step2Tab = document.getElementById('step-tab-2');
+            const connector1 = document.getElementById('step-connector-1-2');
+            const step3Tab = document.getElementById('step-tab-3');
+            const connector2 = document.getElementById('step-connector-2-3');
+
+            if (o.type === 'internal') {
+                if (step2Tab) step2Tab.classList.add('hidden');
+                if (connector1) connector1.classList.add('hidden');
+                if (step3Tab) step3Tab.classList.add('hidden');
+                if (connector2) connector2.classList.add('hidden');
+            } else {
+                if (step2Tab) step2Tab.classList.remove('hidden');
+                if (connector1) connector1.classList.remove('hidden');
+                if (step3Tab) step3Tab.classList.remove('hidden');
+                if (connector2) connector2.classList.remove('hidden');
+            }
+
+            // Interactive Stepper Render
+            [1, 2, 3].forEach(s => {
+                const btn = document.getElementById(`step-tab-${s}`);
+                const circle = btn.querySelector('.item-circle');
+                const label = btn.querySelector('.item-label');
+                const bar = btn.querySelector('.item-bar');
+                const badge = document.getElementById(`badge-step-${s}`);
+
+                // Completion Check
+                let isComplete = false;
+                if (s === 1) isComplete = o.products.every(p => p.scannedQty >= p.expectedQty);
+                if (s === 2) isComplete = !!o.weight;
+                if (s === 3) isComplete = !!o.carrier; // rough check
+
+                // Active State
+                if (s === state.step) {
+                    btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    circle.className = "w-8 h-8 rounded-full bg-brand-600 text-white flex items-center justify-center font-bold text-sm shadow-sm ring-2 ring-white transition-colors item-circle scale-110";
+                    label.className = "text-sm font-bold text-brand-700 group-hover:text-brand-700 transition-colors item-label";
+                    bar.parentElement.classList.remove('hidden');
+                    bar.style.width = '100%';
+                } else if (s < state.step || isComplete) {
+                    // Completed / Past
+                    btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    circle.className = "w-8 h-8 rounded-full bg-green-500 text-white flex items-center justify-center font-bold text-sm shadow-sm ring-2 ring-white transition-colors item-circle";
+                    circle.innerHTML = '<i class="fa-solid fa-check"></i>';
+                    label.className = "text-sm font-bold text-green-700 transition-colors item-label";
+                    bar.parentElement.classList.add('hidden');
+                    badge.classList.remove('opacity-0');
+                } else {
+                    // Future / Locked
+                    btn.classList.add('opacity-50', 'cursor-not-allowed');
+                    circle.className = "w-8 h-8 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center font-bold text-sm shadow-sm ring-2 ring-white transition-colors item-circle";
+                    circle.innerHTML = s;
+                    label.className = "text-sm font-bold text-gray-500 group-hover:text-gray-700 transition-colors item-label";
+                    bar.parentElement.classList.add('hidden');
+                    badge.classList.add('opacity-0');
+                }
+            });
+
+            // Views
+            document.querySelectorAll('.wizard-step').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`step-${state.step}`).classList.remove('hidden');
+
+            renderStepContent();
+        }
+
+        // --- STEP 1: SCANNING VIEW ---
+        function renderUnscanned() {
+            const list = document.getElementById('list-unscanned');
+            if (!list) return;
+            list.innerHTML = '';
+
+            const o = state.activeOrder;
+            let hasUnscanned = false;
+
+            o.products.forEach((p, idx) => {
+                const remaining = p.expectedQty - p.scannedQty;
+                if (remaining > 0) {
+                    hasUnscanned = true;
+                    // Render X times for flat list
+                    for (let i = 0; i < remaining; i++) {
+                        const row = document.createElement('div');
+                        row.className = "bg-white p-3 rounded-lg border border-gray-100 shadow-sm hover:shadow-md hover:border-brand-300 transition-all cursor-pointer flex items-center gap-3 group animate-fade-in";
+                        row.onclick = () => handleProductScan(idx);
+                        row.innerHTML = `
+                            <div class="w-10 h-10 rounded bg-gray-100 flex items-center justify-center text-gray-400">
+                                <i class="fa-solid fa-box"></i>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-sm font-bold text-gray-800 group-hover:text-brand-700">${p.name}</p>
+                                <p class="text-xs text-gray-400 font-mono">${p.sku}</p>
+                            </div>
+                            <div class="text-gray-300 group-hover:text-brand-500">
+                                <i class="fa-solid fa-arrow-right"></i>
+                            </div>
+                        `;
+                        list.appendChild(row);
+                    }
+                }
+            });
+
+            if (!hasUnscanned) {
+                list.innerHTML = `
+                <div class="flex flex-col items-center justify-center h-48 text-gray-300">
+                    <i class="fa-solid fa-check-circle text-4xl mb-2 text-green-100"></i>
+                    <p class="text-sm text-green-600 font-bold">All items scanned!</p>
+                </div>`;
+            }
+        }
+
+        function renderScanned() {
+            const list = document.getElementById('list-scanned');
+            if (!list) return;
+            list.innerHTML = '';
+            const o = state.activeOrder;
+
+            // Calculate Progress
+            let totalExpected = 0;
+            let totalScanned = 0;
+            let hasScanned = false;
+
+            o.products.forEach(p => {
+                totalExpected += p.expectedQty;
+                totalScanned += p.scannedQty;
+
+                if (p.scannedQty > 0) {
+                    hasScanned = true;
+                    const row = document.createElement('div');
+                    const isDone = p.scannedQty === p.expectedQty;
+
+                    if (isDone) {
+                        row.className = "p-4 rounded-xl border border-green-200 bg-green-50 flex items-center gap-4 transition-all animate-fade-in group shadow-sm";
+                    } else {
+                        row.className = "p-4 rounded-xl border border-blue-200 bg-blue-50 flex items-center gap-4 transition-all animate-fade-in group shadow-sm";
+                    }
+
+                    row.innerHTML = `
+                        <!-- Product Image (Placeholder) -->
+                        <div class="w-14 h-14 rounded-lg bg-white border border-gray-200 flex items-center justify-center shrink-0 shadow-sm text-gray-400 relative overflow-hidden">
+                             ${p.isTube ? '<div class="absolute inset-0 bg-purple-50/50 flex items-center justify-center text-purple-200"><i class="fa-solid fa-flask text-2xl rotate-45"></i></div>' : ''}
+                             <i class="fa-solid fa-box-open text-xl relative z-10"></i>
+                        </div>
+                        
+                        <!-- Product Info -->
+                        <div class="flex-1 min-w-0">
+                            <p class="font-bold text-gray-900 text-lg truncate group-hover:text-brand-700 transition-colors">${p.name}</p>
+                            <p class="text-xs text-gray-500 font-mono mt-0.5 tracking-wider">${p.sku}</p>
+                            ${p.isTube && p.serialNumber ? `<div class="mt-1 flex flex-col items-start gap-0.5"><span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Serial #</span><span class="font-mono font-bold text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded border border-purple-100 text-xs">${p.serialNumber}</span></div>` : ''}
+                            ${p.isTube && p.validationStatus === 'success' && p.scannedQty > 0 ? `<div class="mt-1 text-green-600 font-bold text-xs flex items-center gap-1"><i class="fa-solid fa-circle-check"></i> Validated</div>` : ''}
+                        </div>
+                        
+                        <!-- Big Quantity Badge -->
+                        <div class="shrink-0 flex items-center gap-3">
+                             <div class="px-5 py-2 rounded-xl border-2 font-black text-2xl min-w-[90px] text-center shadow-sm flex items-center justify-center gap-2 ${isDone ? 'bg-green-100 text-green-700 border-green-200' : 'bg-blue-100 text-blue-700 border-blue-200'}">
+                                <span>${p.scannedQty}</span>
+                                <span class="text-sm font-bold opacity-60">/ ${p.expectedQty}</span>
+                            </div>
+                            ${isDone ? '<div class="w-10 h-10 rounded-full bg-green-500 text-white flex items-center justify-center shadow-md animate-[bounce_1s] text-xl"><i class="fa-solid fa-check"></i></div>' : ''}
+                        </div>
+                    `;
+                    list.appendChild(row);
+                }
+            });
+
+            // Update Progress Bar
+            const pct = totalExpected > 0 ? Math.round((totalScanned / totalExpected) * 100) : 0;
+            const bar = document.getElementById('scan-progress-bar');
+            const text = document.getElementById('scan-progress-text');
+            if (bar) {
+                bar.style.width = `${pct}%`;
+                bar.className = `h-full transition-all duration-500 relative overflow-hidden ${pct === 100 ? 'bg-green-500' : 'bg-blue-600'}`;
+            }
+            if (text) text.textContent = `${totalScanned} / ${totalExpected}`;
+
+            // Enable/Disable Complete Button
+            const btnComplete = document.getElementById('btn-finish-scan');
+            if (btnComplete) {
+                if (totalScanned === totalExpected && totalExpected > 0) {
+                    btnComplete.disabled = false;
+                    btnComplete.className = "w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-xl shadow-md transition-all mt-4 animate-pulse";
+
+                    if (o.type === 'internal') {
+                        btnComplete.innerHTML = 'Complete Order <i class="fa-solid fa-check-double ml-2"></i>';
+                        btnComplete.onclick = () => {
+                            // COMPLETE INTERNAL ORDER -> MODAL FIRST
+                            openIssueModal('complete');
+                        };
+                    } else {
+                        btnComplete.innerHTML = 'Complete Scanning <i class="fa-solid fa-check ml-2"></i>';
+                        btnComplete.onclick = () => {
+                            // NEXT STEP -> MODAL FIRST
+                            openIssueModal('complete');
+                        };
+                    }
+                } else {
+                    btnComplete.disabled = true;
+                    btnComplete.className = "w-full bg-gray-100 text-gray-300 font-bold py-4 rounded-xl shadow-sm cursor-not-allowed transition-all mt-4";
+                    btnComplete.innerHTML = 'Complete <i class="fa-solid fa-arrow-right ml-1"></i>';
+                }
+            }
+
+            if (!hasScanned) {
+                list.innerHTML = `
+                <div class="flex flex-col items-center justify-center h-full text-gray-400">
+                    <i class="fa-solid fa-barcode text-4xl mb-2 opacity-20"></i>
+                    <p class="text-sm">No items scanned yet</p>
+                </div>`;
+            }
+        }
+
+        function handleProductScan(productInfo) {
+            const o = state.activeOrder;
+            if (state.activeOrder.isPaused) {
+                toast('Order is paused!', 'warning');
+                return;
+            }
+
+            // If passed index directly (click)
+            if (typeof productInfo === 'number') {
+                const p = o.products[productInfo];
+
+                // TUBE LOGIC: Intercept Scan
+                if (p.isTube && p.scannedQty < p.expectedQty) {
+                    openTubeModal(productInfo);
+                    return;
+                }
+
+                if (p.scannedQty < p.expectedQty) {
+                    p.scannedQty++;
+                    renderUnscanned();
+                    renderScanned();
+                    toast(`Scanned ${p.name}`);
+                }
+            }
+        }
+
+        function renderStepContent() {
+            // Hide all steps first
+            document.querySelectorAll('.wizard-step').forEach(el => el.classList.add('hidden'));
+
+            if (state.step === 1) {
+                document.getElementById('step-1').classList.remove('hidden');
+                renderUnscanned();
+                renderScanned();
+            } else if (state.step === 2) {
+                document.getElementById('step-2').classList.remove('hidden');
+                renderWeightStep();
+            } else if (state.step === 3) {
+                document.getElementById('step-3').classList.remove('hidden');
+                renderShipping();
+            }
+        }
+
+        function renderShipping() {
+            const o = state.activeOrder;
+            if (!o) return;
+
+            const weight = o.weight || '0.00';
+            document.getElementById('summary-id').textContent = o.id;
+            document.getElementById('summary-weight').textContent = `${weight} kg`;
+            document.getElementById('summary-items').textContent = o.totalItems;
+
+            items.carrierGrid.innerHTML = state.carriers.map(c => `
+                <div onclick="selectCarrier('${c.id}')" class="cursor-pointer border-2 ${o.carrier === c.id ? 'border-brand-500 bg-brand-50' : 'border-gray-200 hover:border-brand-300'} rounded-xl p-4 transition-all relative">
+                    ${c.tags.includes('Recommended') ? '<span class="absolute -top-3 right-4 bg-green-100 text-green-700 text-[10px] font-bold px-2 py-0.5 rounded border border-green-200 uppercase">Recommended</span>' : ''}
+                    <div class="flex justify-between mb-2">
+                        <span class="font-bold text-gray-800">${c.name}</span>
+                        <span class="font-bold text-gray-900">$${c.price.toFixed(2)}</span>
+                    </div>
+                    <div class="text-xs text-gray-500">${c.method}</div>
+                    <div class="text-xs text-gray-400 mt-2"><i class="fa-solid fa-truck-fast"></i> ${c.eta}</div>
+                </div>
+            `).join('');
+        }
+
+        // Legacy handleProductScan removed. 
+        // Logic is now inside the new 'handleProductScan(productInfo)' function previously added.
+
+        window.selectCarrier = (id) => {
+            state.activeOrder.carrier = id;
+            renderStepContent();
+
+            document.getElementById('summary-carrier').textContent = state.carriers.find(c => c.id === id).name;
+            document.getElementById('summary-carrier').className = "font-bold text-brand-600 text-lg";
+
+            items.btnGenerateLabel.disabled = false;
+            items.btnGenerateLabel.className = "w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-3 rounded-lg transition-all shadow-md";
+        };
+
+        // --- LISTENERS ---
+
+        // Login
+        items.loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            views.login.classList.add('hidden');
+            views.app.classList.remove('hidden');
+            generateData();
+        });
+
+        // Search Filters
+        items.searchInput.addEventListener('input', renderDashboard);
+        items.filterTag.addEventListener('change', renderDashboard);
+        document.getElementById('btn-clear-filters').addEventListener('click', () => {
+            items.searchInput.value = '';
+            items.filterTag.value = 'all';
+            renderDashboard();
+        });
+
+        // Scan Modal
+        items.inputScanStart.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') startProcessing(items.inputScanStart.value.trim());
+        });
+        items.btnCloseScan.addEventListener('click', closeScanModal);
+
+        // Finish Step 1 (now dynamic listener inside render)
+        // items.btnFinishScan listener removed as it's handled in renderScanned dynamic button
+
+
+        // Weight Step Logic
+        const weightInput = document.getElementById('input-captured-weight');
+        const btnCaptureScale = document.getElementById('btn-capture-scale');
+        const btnReportWeight = document.getElementById('btn-report-weight');
+        const btnConfirmWeight = document.getElementById('btn-confirm-weight');
+        const weightReportPanel = document.getElementById('weight-report-panel');
+        const loadingScale = document.getElementById('scale-loading');
+
+        // Capture Button
+        if (btnCaptureScale) {
+            btnCaptureScale.addEventListener('click', () => {
+                loadingScale.classList.remove('hidden');
+                setTimeout(() => {
+                    // Simulate Scale Reading
+                    const weight = (Math.random() * 5 + 0.5).toFixed(2);
+                    weightInput.value = weight;
+                    state.activeOrder.weight = weight;
+                    loadingScale.classList.add('hidden');
+                    validateWeight();
+                    toast('Weight Captured from Scale');
+                }, 800);
+            });
+        }
+
+        // Manual Input
+        if (weightInput) {
+            weightInput.addEventListener('input', () => {
+                state.activeOrder.weight = weightInput.value;
+                validateWeight();
+            });
+        }
+
+        // Report Button
+        if (btnReportWeight) btnReportWeight.addEventListener('click', toggleWeightReport);
+
+        // Confirm Button
+        if (btnConfirmWeight) {
+            btnConfirmWeight.addEventListener('click', () => {
+                // Save report if open
+                const reason = document.getElementById('input-weight-reason').value;
+                if (!weightReportPanel.classList.contains('hidden') && reason) {
+                    state.activeOrder.weightReported = true;
+                    console.log(`Weight Discrepancy Reported: ${reason}`);
+                }
+                window.tryGoToStep(3);
+            });
+        }
+
+        function validateWeight() {
+            const o = state.activeOrder;
+            const current = parseFloat(weightInput.value);
+            const system = parseFloat(o.systemWeight);
+            const hasWeight = !isNaN(current) && current > 0;
+
+            // Status Card
+            const statusCard = document.getElementById('weight-status-card');
+            const statusIcon = document.getElementById('weight-match-indicator');
+            const statusText = document.getElementById('weight-status-text');
+
+            // Reset States
+            btnConfirmWeight.disabled = !hasWeight;
+            btnConfirmWeight.className = hasWeight
+                ? "w-full bg-green-600 hover:bg-green-700 text-white font-bold py-6 rounded-xl shadow-md transition-all flex flex-col items-center justify-center gap-1 animate-pulse"
+                : "w-full bg-gray-100 text-gray-300 font-bold py-6 rounded-xl shadow-none transition-all cursor-not-allowed flex flex-col items-center justify-center gap-1";
+
+            if (!hasWeight) {
+                statusIcon.className = "w-16 h-16 rounded-full bg-gray-50 text-gray-300 flex items-center justify-center text-2xl mb-4 transition-colors";
+                statusIcon.innerHTML = '<i class="fa-solid fa-scale-unbalanced"></i>';
+                statusText.textContent = "Waiting for weight...";
+                statusText.className = "text-sm font-bold text-gray-400";
+
+                btnReportWeight.disabled = true;
+                btnReportWeight.className = "w-full py-4 px-4 rounded-xl border-2 border-dashed border-gray-300 text-gray-400 font-bold text-xs hover:bg-gray-50 transition-all flex flex-col items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed group";
+                return;
+            }
+
+            // Comparison
+            const diff = Math.abs(current - system);
+            const isMatch = diff < 0.1; // Tolerance
+
+            if (isMatch) {
+                // Match
+                statusCard.className = "bg-green-50 border border-green-200 rounded-2xl p-6 flex-1 flex flex-col items-center justify-center text-center transition-all shadow-sm";
+                statusIcon.className = "w-16 h-16 rounded-full bg-green-100 text-green-600 flex items-center justify-center text-2xl mb-4 transition-colors";
+                statusIcon.innerHTML = '<i class="fa-solid fa-check"></i>';
+                statusText.textContent = "Weight Matches!";
+                statusText.className = "text-sm font-bold text-green-600";
+
+                btnReportWeight.disabled = true;
+                weightReportPanel.classList.add('hidden');
+            } else {
+                // Mismatch
+                statusCard.className = "bg-yellow-50 border border-yellow-200 rounded-2xl p-6 flex-1 flex flex-col items-center justify-center text-center transition-all shadow-sm";
+                statusIcon.className = "w-16 h-16 rounded-full bg-yellow-100 text-yellow-600 flex items-center justify-center text-2xl mb-4 transition-colors";
+                statusIcon.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i>';
+                statusText.textContent = `Difference: ${(current - system).toFixed(2)} lbs`;
+                statusText.className = "text-sm font-bold text-yellow-700";
+
+                btnReportWeight.disabled = false;
+                btnReportWeight.className = "w-full py-4 px-4 rounded-xl border-2 border-yellow-400 bg-yellow-50 text-yellow-700 font-bold text-xs hover:bg-yellow-100 transition-all flex flex-col items-center gap-2 cursor-pointer group animate-pulse";
+            }
+        }
+
+        function toggleWeightReport() {
+            const panel = document.getElementById('weight-report-panel');
+            if (panel.classList.contains('hidden')) {
+                panel.classList.remove('hidden');
+                document.getElementById('input-weight-reason').focus();
+            } else {
+                panel.classList.add('hidden');
+            }
+        }
+
+        function renderWeightStep() {
+            const o = state.activeOrder;
+            document.getElementById('system-weight-display').textContent = o.systemWeight;
+            document.getElementById('input-captured-weight').value = o.weight || '';
+            validateWeight();
+        }
+
+        // Shipping Step
+        items.btnGenerateLabel.addEventListener('click', () => {
+            items.btnGenerateLabel.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Generating...';
+            setTimeout(() => {
+                items.btnGenerateLabel.classList.add('hidden');
+                items.btnPrintLabel.classList.remove('hidden');
+                toast('Label Generated Successfully!');
+            }, 1000);
+        });
+
+        items.btnPrintLabel.addEventListener('click', () => {
+            alert('Printing Label...');
+            // Remove order
+            const idx = state.orders.findIndex(o => o.id === state.activeOrder.id);
+            if (idx > -1) state.orders.splice(idx, 1);
+
+            // Back to Dashboard
+            views.processing.classList.add('hidden');
+            views.dashboard.classList.remove('hidden');
+            state.activeOrder = null; // Clear active order after completion
+            renderDashboard();
+            toast('Order Completed!');
+        });
+
+        // Navigation
+        document.getElementById('btn-back-dashboard').addEventListener('click', () => {
+            // Just hide, don't clear state (to allow resume)
+            views.processing.classList.add('hidden');
+            views.dashboard.classList.remove('hidden');
+            renderDashboard();
+        });
+
+        // --- ACTION PANEL LOGIC ---
+        function toggleAction(action) {
+            const o = state.activeOrder;
+            if (!o) return;
+
+            if (action === 'pause') {
+                o.isPaused = !o.isPaused;
+                document.getElementById('paused-overlay').classList.toggle('hidden', !o.isPaused);
+            } else if (action === 'flag') {
+                o.isFlagged = !o.isFlagged;
+                renderProcessing(); // Updates header badge
+                toast(o.isFlagged ? 'Order Flagged' : 'Flag Removed');
+            } else if (action === 'escalate') {
+                o.isEscalated = !o.isEscalated;
+                renderProcessing(); // Updates header tint
+                toast(o.isEscalated ? 'Order Escalated' : 'Escalation Removed', o.isEscalated ? 'error' : 'success');
+            } else if (action === 'oos') {
+                toast('Select item to mark Out of Stock', 'warning');
+            }
+        }
+
+        function handleCancelOrder() {
+            if (confirm('Are you sure you want to cancel this order?')) {
+                // Remove from list
+                const idx = state.orders.findIndex(o => o.id === state.activeOrder.id);
+                if (idx > -1) state.orders.splice(idx, 1);
+
+                state.activeOrder = null;
+                views.processing.classList.add('hidden');
+                views.dashboard.classList.remove('hidden');
+                renderDashboard();
+                toast('Order Cancelled');
+            }
+        }
+
+        // --- UTILS ---
+        function toast(message, type = 'success') {
+            const el = document.createElement('div');
+            // Changed position to Top Center
+            el.className = `fixed top-6 left-1/2 -translate-x-1/2 px-8 py-4 rounded-xl shadow-2xl text-white font-bold animate-move-down z-[100] min-w-[320px] text-center flex items-center justify-center gap-3 backdrop-blur-md ${type === 'error' ? 'bg-red-600/95' : type === 'warning' ? 'bg-orange-500/95' : 'bg-gray-900/95'}`;
+            el.innerHTML = `<i class="fa-solid ${type === 'error' ? 'fa-circle-exclamation text-xl' : type === 'warning' ? 'fa-triangle-exclamation text-xl' : 'fa-check-circle text-xl'}"></i> <span class="text-lg">${message}</span>`;
+            document.body.appendChild(el);
+
+            // Add custom animation style if not present
+            if (!document.getElementById('toast-style')) {
+                const style = document.createElement('style');
+                style.id = 'toast-style';
+                style.innerHTML = `
+                    @keyframes move-down {
+                        0% { opacity: 0; transform: translate(-50%, -20px); }
+                        100% { opacity: 1; transform: translate(-50%, 0); }
+                    }
+                    .animate-move-down {
+                        animation: move-down 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+
+            setTimeout(() => {
+                el.style.opacity = '0';
+                el.style.transform = 'translate(-50%, -20px)';
+                el.style.transition = 'all 0.3s ease';
+                setTimeout(() => el.remove(), 300);
+            }, 3000);
+        }
+
+        // --- TUBE VALIDATION LOGIC ---
+
+        let activeTubeIndex = null;
+        const tubeModal = document.getElementById('modal-scan-tube');
+        const tubeInput = document.getElementById('input-tube-serial');
+        const tubeValidatingUI = document.getElementById('tube-validating-ui');
+
+        function openTubeModal(productIndex) {
+            activeTubeIndex = productIndex;
+            tubeInput.value = '';
+            tubeValidatingUI.classList.add('hidden');
+
+            tubeModal.classList.remove('hidden');
+            setTimeout(() => {
+                tubeModal.classList.remove('opacity-0');
+                tubeInput.focus();
+            }, 10);
+        }
+
+        function closeTubeModal() {
+            activeTubeIndex = null;
+            tubeModal.classList.add('opacity-0');
+            setTimeout(() => tubeModal.classList.add('hidden'), 200);
+        }
+
+        // Enter key for Tube Input
+        tubeInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') validateTube();
+        });
+
+        function validateTube() {
+            const serial = tubeInput.value.trim();
+            if (!serial) {
+                toast('Please enter a serial number', 'error');
+                return;
+            }
+
+            // Show Loading
+            tubeValidatingUI.classList.remove('hidden');
+
+            // Simulation
+            setTimeout(() => {
+                const o = state.activeOrder;
+                const p = o.products[activeTubeIndex];
+
+                // Check mock validation status
+                const isValid = p.validationStatus === 'success';
+
+                if (isValid) {
+                    // Success Path
+                    p.serialNumber = serial;
+                    p.scannedQty++; // Increment now
+
+                    toast(`Tube Validated!`, 'success');
+                    closeTubeModal();
+
+                    renderUnscanned(); // Move from unscanned
+                    renderScanned();   // Update scanned list
+
+                } else {
+                    // Failure Path
+                    toast('Serial Number Validation Failed!', 'error');
+                    closeTubeModal();
+
+                    // Auto-open Issue Dialog
+                    setTimeout(() => {
+                        openIssueModal('issue'); // Open as normal issue
+                        const radio = document.querySelector('input[value="duplicate-tube"]');
+                        if (radio) radio.checked = true;
+                    }, 300);
+                }
+            }, 1500);
+        }
+
+        // Global Shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'F2') {
+                e.preventDefault();
+                openScanModal();
+            }
+        });
+
+    </script>
+</body>
+
+</html>

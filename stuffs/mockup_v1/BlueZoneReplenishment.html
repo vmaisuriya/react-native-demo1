@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BlueZone Replenishment - Mobile Flow</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    animation: {
+                        'bounce-short': 'bounce 1s infinite',
+                        'fade-in': 'fadeIn 0.3s ease-out forwards',
+                        'slide-up': 'slideUp 0.3s ease-out forwards'
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' }
+                        },
+                        slideUp: {
+                            '0%': { transform: 'translateY(20px)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 h-screen w-full flex items-center justify-center overflow-hidden">
+
+    <!-- DESKTOP WRAPPER -->
+    <div class="relative w-full h-full flex items-center justify-center p-8">
+
+        <!-- MOBILE EMULATOR CONTAINER -->
+        <div
+            class="w-[375px] h-[700px] bg-white rounded-2xl shadow-2xl border border-gray-300 overflow-hidden relative flex flex-col">
+
+            <!-- MOBILE HEADER -->
+            <header
+                class="h-[56px] bg-blue-600 shrink-0 flex items-center justify-between px-4 text-white z-10 sticky top-0 shadow-md">
+                <div class="flex items-center gap-3">
+                    <button id="back-btn" onclick="goBack()"
+                        class="hidden text-white/80 hover:text-white transition-colors">
+                        <i class="fa-solid fa-arrow-left text-lg"></i>
+                    </button>
+                    <div class="font-medium text-lg tracking-tight" id="header-title">BlueZone</div>
+                </div>
+                <div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
+                    <i class="fa-solid fa-user text-sm"></i>
+                </div>
+            </header>
+
+            <!-- SCREENS -->
+            <main id="app-content" class="flex-1 overflow-y-auto no-scrollbar bg-gray-50 relative">
+                <!-- Content injected via JS -->
+            </main>
+
+        </div>
+
+    </div>
+
+    <!-- Modals & Toasts -->
+    <div id="modal-overlay"
+        class="absolute inset-0 bg-black/50 z-40 hidden items-center justify-center p-4 mobile-modal-container">
+        <!-- Injected -->
+    </div>
+
+    <div id="toast"
+        class="absolute bottom-20 left-1/2 -translate-x-1/2 bg-gray-900/90 text-white px-6 py-3 rounded-full text-sm font-medium shadow-lg opacity-0 transition-all duration-300 pointer-events-none z-50 whitespace-nowrap transform translate-y-4">
+        <!-- Message -->
+    </div>
+
+    <script>
+        // --- STATE MANAGEMENT ---
+        const state = {
+            currentView: 'categories', // categories, list, pick, drop
+            selectedCategory: null,
+            activeRequest: null,
+            requests: {
+                urgent: [
+                    { id: 'TR-1024', product: 'Blue Widget', sku: 'BW-001', lot: 'L-998', source: 'A-01-B-03', dest: 'BLUE-ZONE-07', qty: 12 },
+                    { id: 'TR-1025', product: 'Red Gadget', sku: 'RG-505', lot: 'L-102', source: 'B-02-C-01', dest: 'BLUE-ZONE-02', qty: 5 },
+                    { id: 'TR-1026', product: 'Green Component', sku: 'GC-202', lot: 'L-334', source: 'C-05-A-02', dest: 'BLUE-ZONE-12', qty: 20 }
+                ],
+                normal: Array.from({ length: 12 }, (_, i) => ({
+                    id: `TR-20${10 + i}`,
+                    product: i % 2 === 0 ? 'Standard Bolt' : 'Washer Set',
+                    sku: i % 2 === 0 ? 'SB-100' : 'WS-500',
+                    lot: `L-50${i}`,
+                    source: `D-0${i + 1}-A-01`,
+                    dest: `BLUE-ZONE-${20 + i}`,
+                    qty: 50 + i
+                })),
+                inProgress: [
+                    { id: 'TR-3001', product: 'Control Panel', sku: 'CP-X1', lot: 'L-777', source: 'Z-09-F-04', dest: 'BLUE-ZONE-01', qty: 2, status: 'picked' }
+                ],
+                completed: []
+            }
+        };
+
+        // --- NAVIGATION ---
+        function setView(viewName, data = null) {
+            state.currentView = viewName;
+            const content = document.getElementById('app-content');
+            const backBtn = document.getElementById('back-btn');
+            const title = document.getElementById('header-title');
+
+            // Reset scroll
+            content.scrollTop = 0;
+
+            // Render View
+            switch (viewName) {
+                case 'categories':
+                    renderCategories();
+                    backBtn.classList.add('hidden');
+                    title.textContent = 'BlueZone';
+                    break;
+                case 'list':
+                    state.selectedCategory = data;
+                    renderList(data);
+                    backBtn.classList.remove('hidden');
+                    title.textContent = data === 'inProgress' ? 'My Progress' : `${data.charAt(0).toUpperCase() + data.slice(1)} Requests`;
+                    break;
+                case 'pick':
+                    renderPick();
+                    backBtn.classList.remove('hidden');
+                    title.textContent = 'Pick Item';
+                    break;
+                case 'drop':
+                    renderDrop();
+                    backBtn.classList.remove('hidden');
+                    title.textContent = 'Drop Item';
+                    break;
+            }
+        }
+
+        function goBack() {
+            if (state.currentView === 'list') {
+                setView('categories');
+            } else if (state.currentView === 'pick' || state.currentView === 'drop') {
+                // If in progress from a flow, usually go back to list
+                setView('list', 'inProgress');
+            }
+        }
+
+        // --- RENDERERS ---
+
+        function renderCategories() {
+            const content = document.getElementById('app-content');
+            const counts = {
+                urgent: state.requests.urgent.length,
+                normal: state.requests.normal.length,
+                inProgress: state.requests.inProgress.length
+            };
+
+            content.innerHTML = `
+                <div class="p-6 flex flex-col gap-4 animate-fade-in h-full justify-center">
+                    <h2 class="text-xl font-bold text-gray-800 mb-2">Select Queue</h2>
+                    
+                    <button onclick="setView('list', 'urgent')" class="w-full bg-red-500 hover:bg-red-600 text-white rounded-xl p-6 shadow-md flex items-center justify-between transition-transform active:scale-95 group">
+                        <span class="text-lg font-bold">Urgent</span>
+                        <span class="bg-white text-red-600 px-3 py-1 rounded-full font-bold text-sm shadow-sm">${counts.urgent}</span>
+                    </button>
+
+                    <button onclick="setView('list', 'normal')" class="w-full bg-blue-500 hover:bg-blue-600 text-white rounded-xl p-6 shadow-md flex items-center justify-between transition-transform active:scale-95 group">
+                        <span class="text-lg font-bold">Normal</span>
+                        <span class="bg-white text-blue-600 px-3 py-1 rounded-full font-bold text-sm shadow-sm">${counts.normal}</span>
+                    </button>
+
+                    <button onclick="setView('list', 'inProgress')" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white rounded-xl p-6 shadow-md flex items-center justify-between transition-transform active:scale-95 group">
+                        <span class="text-lg font-bold">In Progress</span>
+                        <span class="bg-white text-yellow-600 px-3 py-1 rounded-full font-bold text-sm shadow-sm">${counts.inProgress}</span>
+                    </button>
+                </div>
+            `;
+        }
+
+        function renderList(category) {
+            const content = document.getElementById('app-content');
+            const data = state.requests[category];
+
+            if (data.length === 0) {
+                content.innerHTML = `
+                    <div class="h-full flex flex-col items-center justify-center text-gray-400 p-8 text-center animate-fade-in">
+                        <i class="fa-solid fa-clipboard-check text-6xl mb-4 text-gray-300"></i>
+                        <p class="text-lg font-medium">No requests here</p>
+                        <button onclick="setView('categories')" class="mt-6 text-blue-600 font-bold hover:underline">Go Back</button>
+                    </div>
+                `;
+                return;
+            }
+
+            const html = data.map(req => `
+                <div onclick="handleRequestClick('${category}', '${req.id}')" class="bg-white rounded-xl p-4 shadow-sm border border-gray-200 active:bg-blue-50 transition-colors cursor-pointer animate-slide-up">
+                    <div class="flex justify-between items-start mb-2">
+                        <span class="font-mono font-bold text-gray-500 text-xs bg-gray-100 px-2 py-1 rounded">${req.id}</span>
+                        ${category === 'inProgress' && req.status === 'picked' ? '<span class="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded">Picked</span>' : ''}
+                    </div>
+                    <h3 class="font-bold text-gray-900 mb-1">${req.product}</h3>
+                    <div class="grid grid-cols-2 gap-2 text-sm mt-3">
+                        <div class="bg-gray-50 p-2 rounded">
+                            <span class="block text-[10px] text-gray-400 uppercase font-bold">From</span>
+                            <span class="font-mono font-bold text-gray-700">${req.source}</span>
+                        </div>
+                        <div class="bg-purple-50 p-2 rounded">
+                            <span class="block text-[10px] text-purple-400 uppercase font-bold">To</span>
+                            <span class="font-mono font-bold text-purple-700">${req.dest}</span>
+                        </div>
+                    </div>
+                    <div class="mt-3 flex items-center justify-between border-t border-gray-100 pt-2">
+                        <span class="text-xs text-gray-500">Qty: <strong class="text-gray-900 text-base">${req.qty}</strong></span>
+                        <i class="fa-solid fa-chevron-right text-gray-300 text-sm"></i>
+                    </div>
+                </div>
+            `).join('');
+
+            content.innerHTML = `<div class="p-4 space-y-3 pb-20">${html}</div>`;
+        }
+
+        function renderPick() {
+            const req = state.activeRequest;
+            const content = document.getElementById('app-content');
+
+            content.innerHTML = `
+                <div class="flex flex-col h-full animate-fade-in">
+                    <!-- Location Header -->
+                    <div class="bg-gray-900 text-white p-6 text-center shrink-0">
+                        <p class="text-xs opacity-60 uppercase font-bold tracking-widest mb-1">Pick From Source</p>
+                        <h1 class="text-3xl font-mono font-bold text-yellow-400">${req.source}</h1>
+                    </div>
+
+                    <!-- Product Card -->
+                    <div class="p-6 flex-1 overflow-y-auto">
+                        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 flex flex-col items-center text-center">
+                            <div class="w-24 h-24 bg-gray-100 rounded-lg mb-4 flex items-center justify-center">
+                                <i class="fa-solid fa-box text-gray-400 text-4xl"></i>
+                            </div>
+                            <h2 class="text-xl font-bold text-gray-900 mb-1">${req.product}</h2>
+                            <p class="text-sm text-gray-500 font-mono mb-4">SKU: ${req.sku} &bull; Lot: ${req.lot}</p>
+                            
+                            <div class="bg-blue-50 text-blue-700 px-6 py-3 rounded-xl font-bold text-2xl w-full mb-6">
+                                ${req.qty} <span class="text-sm font-normal opacity-70">units</span>
+                            </div>
+
+                            <button onclick="simulateScan('pick')" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold py-4 rounded-xl flex items-center justify-center gap-3 transition-colors border-2 border-dashed border-gray-300">
+                                <i class="fa-solid fa-barcode"></i>
+                                Scan Product SKU
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderDrop() {
+            const req = state.activeRequest;
+            const content = document.getElementById('app-content');
+
+            content.innerHTML = `
+                <div class="flex flex-col h-full animate-fade-in">
+                    <!-- Location Header -->
+                    <div class="bg-purple-900 text-white p-6 text-center shrink-0">
+                        <p class="text-xs opacity-60 uppercase font-bold tracking-widest mb-1">Drop To Destination</p>
+                        <h1 class="text-3xl font-mono font-bold text-purple-300">${req.dest}</h1>
+                    </div>
+
+                    <!-- Steps -->
+                    <div class="p-6 flex-1 overflow-y-auto space-y-4">
+                        
+                        <!-- Step 1: Scan Loc -->
+                        <div id="drop-step-1" class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+                            <div class="flex items-center gap-3 mb-4">
+                                <div class="w-8 h-8 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center font-bold">1</div>
+                                <h3 class="font-bold text-gray-800">Scan Destination</h3>
+                            </div>
+                            <button onclick="simulateScan('drop-loc')" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-lg shadow-md transition-colors">
+                                <i class="fa-solid fa-qrcode mr-2"></i> Scan Location
+                            </button>
+                        </div>
+
+                        <!-- Step 2: Scan Prod -->
+                        <div id="drop-step-2" class="bg-gray-50 rounded-xl border border-gray-200 p-5 opacity-50 pointer-events-none transition-all">
+                            <div class="flex items-center gap-3 mb-4">
+                                <div class="w-8 h-8 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center font-bold">2</div>
+                                <h3 class="font-bold text-gray-500">Scan Product</h3>
+                            </div>
+                            <button id="btn-scan-drop-prod" onclick="simulateScan('drop-prod')" class="w-full bg-gray-200 text-gray-400 font-bold py-3 rounded-lg cursor-not-allowed">
+                                <i class="fa-solid fa-barcode mr-2"></i> Confirm SKU
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+            `;
+        }
+
+        // --- INTERACTION LOGIC ---
+
+        function handleRequestClick(category, id) {
+            const req = state.requests[category].find(r => r.id === id);
+            state.activeRequest = req;
+
+            if (category === 'inProgress') {
+                if (req.status === 'picked') {
+                    setView('drop');
+                } else {
+                    setView('pick');
+                }
+            } else {
+                showClaimModal(req);
+            }
+        }
+
+        function showClaimModal(req) {
+            const modal = document.getElementById('modal-overlay');
+            modal.innerHTML = `
+                <div class="bg-white rounded-2xl p-6 w-[320px] shadow-2xl animate-slide-up">
+                    <h3 class="text-lg font-bold text-gray-900 mb-2">Claim Request?</h3>
+                    <p class="text-sm text-gray-500 mb-6">
+                        Start replenishment <strong>${req.id}</strong> for <br>
+                        <span class="text-gray-800 font-medium">${req.product}</span>?
+                    </p>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button onclick="closeModal()" class="py-3 rounded-xl font-bold text-gray-600 bg-gray-100 hover:bg-gray-200">Cancel</button>
+                        <button onclick="confirmClaim()" class="py-3 rounded-xl font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-md">Yes, Claim</button>
+                    </div>
+                </div>
+            `;
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('modal-overlay');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function confirmClaim() {
+            const req = state.activeRequest;
+            // Remove from current queue
+            const fromQueue = state.selectedCategory;
+            state.requests[fromQueue] = state.requests[fromQueue].filter(r => r.id !== req.id);
+
+            // Add to In Progress
+            req.status = 'claimed';
+            state.requests.inProgress.push(req);
+
+            closeModal();
+            showToast('Request Claimed');
+            setView('pick');
+        }
+
+        function simulateScan(type) {
+            const content = document.getElementById('app-content');
+
+            showToast('Scanning...');
+
+            setTimeout(() => {
+                if (type === 'pick') {
+                    // Success Pick
+                    state.activeRequest.status = 'picked';
+                    content.innerHTML = `
+                         <div class="h-full flex flex-col items-center justify-center p-8 animate-fade-in text-center">
+                            <div class="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mb-6 text-green-600 animate-bounce-short">
+                                <i class="fa-solid fa-check text-4xl"></i>
+                            </div>
+                            <h2 class="text-2xl font-bold text-gray-900 mb-2">Product Picked</h2>
+                            <p class="text-gray-500 mb-8">Item verified successfully.</p>
+                            
+                            <div class="w-full space-y-3">
+                                <button onclick="setView('drop')" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg">
+                                    Drop to Destination
+                                </button>
+                                <button onclick="setView('list', 'inProgress')" class="w-full bg-white border-2 border-gray-200 text-gray-700 font-bold py-4 rounded-xl hover:bg-gray-50">
+                                    Continue Picking Others
+                                </button>
+                            </div>
+                         </div>
+                    `;
+                } else if (type === 'drop-loc') {
+                    // Unlock Step 2
+                    const step1 = document.getElementById('drop-step-1');
+                    const step2 = document.getElementById('drop-step-2');
+
+                    step1.classList.add('opacity-50', 'pointer-events-none');
+                    step1.innerHTML = `
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid fa-circle-check text-green-500 text-2xl"></i>
+                            <h3 class="font-bold text-gray-800">Destination Verified</h3>
+                        </div>
+                    `;
+
+                    step2.classList.remove('opacity-50', 'pointer-events-none', 'bg-gray-50');
+                    step2.classList.add('bg-white', 'shadow-sm');
+                    step2.querySelector('button').classList.remove('bg-gray-200', 'text-gray-400', 'cursor-not-allowed');
+                    step2.querySelector('button').classList.add('bg-blue-600', 'text-white', 'hover:bg-blue-700', 'shadow-md');
+                    step2.querySelector('button').innerHTML = '<i class="fa-solid fa-barcode mr-2"></i> Scan Product SKU';
+
+                    showToast('Location Confirmed');
+
+                } else if (type === 'drop-prod') {
+                    // Complete
+                    completeRequest();
+                }
+            }, 800);
+        }
+
+        function completeRequest() {
+            const req = state.activeRequest;
+            // Remove from In Progress
+            state.requests.inProgress = state.requests.inProgress.filter(r => r.id !== req.id);
+            state.requests.completed.push(req);
+
+            const content = document.getElementById('app-content');
+            content.innerHTML = `
+                 <div class="h-full flex flex-col items-center justify-center p-8 animate-fade-in text-center">
+                    <div class="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mb-6 text-green-600">
+                        <i class="fa-solid fa-circle-check text-5xl"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-gray-900 mb-2">Transfer Complete!</h2>
+                    <p class="text-gray-500 mb-8">Inventory updated successfully.</p>
+                    
+                    <button onclick="setView('categories')" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg">
+                        Back to Queue
+                    </button>
+                 </div>
+            `;
+            showToast('Transfer Successful');
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.classList.remove('opacity-0', 'translate-y-4');
+            toast.classList.add('translate-y-0');
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-4');
+                toast.classList.remove('translate-y-0');
+            }, 2500);
+        }
+
+        // --- INIT ---
+        window.onload = () => {
+            // Position emulation in center of desktop
+            const emulator = document.querySelector('.w-\\[375px\\]');
+            if (emulator) emulator.style.transform = "scale(1)";
+            setView('categories');
+        }
+
+    </script>
+</body>
+
+</html>

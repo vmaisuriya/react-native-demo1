@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BlueZone TV Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .list-enter-active,
+        .list-leave-active {
+            transition: all 0.5s ease;
+        }
+
+        .list-enter-from {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+
+        .list-leave-to {
+            opacity: 0;
+            transform: translateX(50px);
+        }
+
+        .flash-urgent {
+            animation: flash-border 2s infinite;
+        }
+
+        @keyframes flash-border {
+            0% {
+                border-color: transparent;
+                box-shadow: 0 0 0 transparent;
+            }
+
+            50% {
+                border-color: #ef4444;
+                box-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
+            }
+
+            100% {
+                border-color: transparent;
+                box-shadow: 0 0 0 transparent;
+            }
+        }
+
+        .task-card {
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 text-gray-900 h-screen overflow-hidden flex flex-col select-none">
+
+    <!-- HEADER -->
+    <header class="bg-white px-10 py-6 shadow-xl flex justify-between items-center shrink-0 z-10">
+        <div class="flex items-center gap-6">
+            <div
+                class="w-20 h-20 bg-cyan-600 rounded-2xl flex items-center justify-center text-white text-5xl shadow-lg">
+                <i class="fa-solid fa-mobile-screen"></i>
+            </div>
+            <h1 class="text-6xl font-black tracking-tight text-gray-800 uppercase">BlueZone Replenishment</h1>
+        </div>
+        <div class="flex items-center gap-10">
+            <div class="flex flex-col items-end">
+                <div class="text-3xl font-bold text-gray-400" id="last-updated">Last Updated: --:--:--</div>
+                <div class="text-2xl font-semibold text-gray-300" id="refresh-timer">Flow Rate: 5s</div>
+            </div>
+            <div class="bg-gray-50 border-2 border-gray-100 rounded-2xl px-8 py-4 shadow-inner">
+                <span id="clock" class="text-6xl font-mono font-black text-gray-800 tracking-widest">--:--:--</span>
+            </div>
+            <button onclick="document.documentElement.requestFullscreen()"
+                class="bg-gray-800 text-white rounded-2xl px-8 py-6 text-3xl font-bold hover:bg-gray-900 shadow-lg transition-transform active:scale-95 flex items-center gap-4">
+                <i class="fa-solid fa-expand"></i> Fullscreen
+            </button>
+        </div>
+    </header>
+
+    <!-- CONTENT -->
+    <main class="flex-1 p-8 grid grid-cols-3 gap-8 overflow-hidden h-full">
+
+        <!-- PENDING COLUMN -->
+        <div class="bg-white rounded-[2rem] shadow-xl p-8 flex flex-col h-full border-t-8 border-gray-300">
+            <div class="flex justify-between items-center mb-6 shrink-0">
+                <h2 class="text-5xl font-black text-gray-800 uppercase tracking-widest">Pending</h2>
+                <div class="bg-gray-200 text-gray-800 text-4xl font-bold px-6 py-2 rounded-full" id="count-pending">0
+                </div>
+            </div>
+            <div class="flex-1 overflow-y-auto pr-4 space-y-6" id="list-pending">
+                <!-- Javascript populated -->
+            </div>
+        </div>
+
+        <!-- IN PROGRESS COLUMN -->
+        <div class="bg-white rounded-[2rem] shadow-xl p-8 flex flex-col h-full border-t-8 border-cyan-500">
+            <div class="flex justify-between items-center mb-6 shrink-0">
+                <h2 class="text-5xl font-black text-cyan-700 uppercase tracking-widest">In Progress</h2>
+                <div class="bg-cyan-100 text-cyan-800 text-4xl font-bold px-6 py-2 rounded-full" id="count-progress">0
+                </div>
+            </div>
+            <div class="flex-1 overflow-y-auto pr-4 space-y-6" id="list-progress">
+                <!-- Javascript populated -->
+            </div>
+        </div>
+
+        <!-- DONE COLUMN -->
+        <div
+            class="bg-white rounded-[2rem] shadow-xl p-8 flex flex-col h-full border-t-8 border-green-500 bg-gradient-to-b from-green-50 to-white">
+            <div class="flex justify-between items-center mb-6 shrink-0">
+                <h2 class="text-5xl font-black text-green-700 uppercase tracking-widest">Done</h2>
+                <div class="bg-green-100 text-green-800 text-4xl font-bold px-6 py-2 rounded-full" id="count-done">0
+                </div>
+            </div>
+            <div class="flex-1 overflow-y-auto pr-4 space-y-6" id="list-done">
+                <!-- Javascript populated -->
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // --- CONFIGURATION ---
+        const TICK_RATE_MS = 2000; // Time between logic ticks
+        const DONE_RETENTION_SEC = 10; // Auto-remove done items
+
+        // Users for assignment
+        const USERS = ['Alex M.', 'Jordan K.', 'Taylor P.', 'Sam R.', 'Casey L.'];
+
+        // Initial Data Structure
+        let tasks = [];
+        let taskCounter = 1000;
+
+        function createTask(isUrgent = false) {
+            taskCounter++;
+            return {
+                id: 'RPL-' + taskCounter,
+                sku: 'SKU-' + Math.floor(Math.random() * 90000 + 10000),
+                qty: Math.floor(Math.random() * 50) + 10,
+                status: 'pending', // pending, progress, done
+                assigned: null,
+                urgent: isUrgent || Math.random() > 0.85,
+                doneAt: null
+            };
+        }
+
+        // Initialize some tasks
+        for (let i = 0; i < 8; i++) tasks.push(createTask());
+        for (let i = 0; i < 5; i++) {
+            let t = createTask();
+            t.status = 'progress';
+            t.assigned = USERS[Math.floor(Math.random() * USERS.length)];
+            tasks.push(t);
+        }
+
+        function createCardHTML(task) {
+            const urgentClass = task.urgent ? 'flash-urgent border-red-500 bg-red-50' : 'border-gray-200 bg-gray-50';
+            const urgentBadge = task.urgent ? `<div class="bg-red-500 text-white text-xl font-bold px-4 py-1 rounded-full uppercase tracking-widest align-middle animate-pulse inline-block ml-4">Urgent</div>` : '';
+
+            let statusBadge = '';
+            if (task.status === 'pending') {
+                statusBadge = `<div class="text-3xl font-semibold text-gray-500 mt-4"><i class="fa-regular fa-clock mr-2"></i> Unassigned</div>`;
+            } else if (task.status === 'progress') {
+                statusBadge = `
+                    <div class="flex items-center gap-4 mt-4 bg-white p-3 rounded-xl border border-gray-200 w-max">
+                        <div class="w-10 h-10 bg-cyan-100 text-cyan-700 rounded-full flex items-center justify-center text-xl"><i class="fa-solid fa-user"></i></div>
+                        <span class="text-3xl font-bold text-gray-800">${task.assigned}</span>
+                    </div>
+                `;
+            } else if (task.status === 'done') {
+                statusBadge = `
+                    <div class="flex items-center gap-3 mt-4 text-green-600">
+                        <i class="fa-solid fa-circle-check text-4xl"></i>
+                        <span class="text-3xl font-bold">Completed by ${task.assigned}</span>
+                    </div>
+                `;
+            }
+
+            return `
+                <div class="task-card border-4 rounded-3xl p-6 shadow-sm ${urgentClass}" id="${task.id}">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <div class="text-2xl font-bold text-gray-400 mb-1">${task.id}</div>
+                            <div class="text-5xl font-black text-gray-800">${task.sku} ${urgentBadge}</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-2xl font-bold text-gray-400 mb-1">QTY</div>
+                            <div class="text-6xl font-black text-cyan-600">${task.qty}</div>
+                        </div>
+                    </div>
+                    ${statusBadge}
+                </div>
+            `;
+        }
+
+        function renderLists() {
+            const pending = tasks.filter(t => t.status === 'pending');
+            const progress = tasks.filter(t => t.status === 'progress');
+            const done = tasks.filter(t => t.status === 'done');
+
+            // Sort pending: urgent first
+            pending.sort((a, b) => (b.urgent ? 1 : 0) - (a.urgent ? 1 : 0));
+
+            document.getElementById('list-pending').innerHTML = pending.map(createCardHTML).join('');
+            document.getElementById('list-progress').innerHTML = progress.map(createCardHTML).join('');
+            document.getElementById('list-done').innerHTML = done.map(createCardHTML).join('');
+
+            document.getElementById('count-pending').textContent = pending.length;
+            document.getElementById('count-progress').textContent = progress.length;
+            document.getElementById('count-done').textContent = done.length;
+        }
+
+        function simulateFlow() {
+            const now = Date.now();
+            let changed = false;
+
+            // 1. Remove old done items
+            const originalLength = tasks.length;
+            tasks = tasks.filter(t => t.status !== 'done' || (now - t.doneAt < DONE_RETENTION_SEC * 1000));
+            if (tasks.length !== originalLength) changed = true;
+
+            // 2. Move Progress to Done
+            const inProgress = tasks.filter(t => t.status === 'progress');
+            inProgress.forEach(t => {
+                if (Math.random() > 0.7) { // 30% chance to finish per tick
+                    t.status = 'done';
+                    t.doneAt = now;
+                    changed = true;
+                }
+            });
+
+            // 3. Move Pending to Progress
+            const pending = tasks.filter(t => t.status === 'pending');
+            // Allow up to 6 in progress at a time
+            const currentProgressCount = tasks.filter(t => t.status === 'progress').length;
+            if (currentProgressCount < 6 && pending.length > 0) {
+                if (Math.random() > 0.4) {
+                    // Pull highest priority
+                    pending.sort((a, b) => (b.urgent ? 1 : 0) - (a.urgent ? 1 : 0));
+                    const toStart = pending[0];
+                    toStart.status = 'progress';
+                    toStart.assigned = USERS[Math.floor(Math.random() * USERS.length)];
+                    changed = true;
+                }
+            }
+
+            // 4. Create new Pending
+            if (tasks.filter(t => t.status === 'pending').length < 8) {
+                if (Math.random() > 0.3) {
+                    tasks.push(createTask());
+                    changed = true;
+                }
+            }
+
+            if (changed) renderLists();
+        }
+
+        function updateTimestamp() {
+            const now = new Date();
+            document.getElementById('last-updated').textContent = 'Last Updated: ' + now.toLocaleTimeString('en-US', { hour12: false });
+        }
+
+        // --- CLOCK & SIMULATION LOOP ---
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById('clock').textContent = now.toLocaleTimeString('en-US', { hour12: false });
+        }, 1000);
+
+        setInterval(() => {
+            simulateFlow();
+            updateTimestamp();
+        }, TICK_RATE_MS);
+
+        // --- INIT ---
+        renderLists();
+        updateTimestamp();
+
+    </script>
+</body>
+
+</html>

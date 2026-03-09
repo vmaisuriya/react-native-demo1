@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unified Operations Command</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .fade-enter {
+            opacity: 0;
+        }
+
+        .fade-enter-active {
+            opacity: 1;
+            transition: opacity 0.5s ease;
+        }
+
+        .fade-exit {
+            opacity: 1;
+        }
+
+        .fade-exit-active {
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        /* Pipeline Flow Animation */
+        @keyframes flow-line {
+            0% {
+                background-position: 0 0;
+            }
+
+            100% {
+                background-position: 50px 0;
+            }
+        }
+
+        .flow-connector {
+            background: linear-gradient(90deg, #e5e7eb 50%, #d1d5db 50%);
+            background-size: 50px 100%;
+            animation: flow-line 1s linear infinite;
+        }
+
+        .view-section {
+            position: absolute;
+            inset: 0;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 1s ease-in-out;
+        }
+
+        .view-active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-900 text-white h-screen overflow-hidden flex flex-col relative">
+
+    <!-- HEADER -->
+    <header
+        class="bg-gray-800 px-8 py-6 shadow-lg flex justify-between items-center shrink-0 z-20 border-b border-gray-700">
+        <div class="flex items-center gap-6">
+            <div
+                class="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center text-white text-3xl shadow-lg">
+                <i class="fa-solid fa-earth-americas"></i>
+            </div>
+            <div>
+                <h1 class="text-4xl font-black tracking-tight text-white uppercase">Operations Command Center</h1>
+                <div class="flex items-center gap-2 mt-1">
+                    <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                    <span class="text-sm font-bold text-gray-400 uppercase tracking-widest">System Operational</span>
+                </div>
+            </div>
+        </div>
+        <div class="bg-gray-700 border border-gray-600 rounded-2xl px-8 py-3 shadow-inner">
+            <span id="clock" class="text-5xl font-mono font-bold text-gray-300 tracking-widest">--:--:--</span>
+        </div>
+    </header>
+
+    <!-- CONTENT CONTAINER -->
+    <main class="flex-1 relative overflow-hidden bg-gray-900">
+
+        <!-- VIEW 1: ACTIVITY GRID -->
+        <div id="view-activity" class="view-section view-active">
+            <h2 class="text-2xl font-bold text-gray-500 uppercase tracking-widest mb-4">Live Zone Activity</h2>
+            <div class="grid grid-cols-3 gap-8 h-full">
+                <!-- Builder -->
+                <div
+                    class="bg-gray-800 rounded-[2.5rem] border border-gray-700 p-8 flex flex-col items-center justify-center relative overflow-hidden">
+                    <div class="absolute inset-0 bg-blue-500/10"></div>
+                    <div
+                        class="w-20 h-20 rounded-full bg-blue-900/50 flex items-center justify-center text-4xl text-blue-400 mb-6 border border-blue-500/30">
+                        <i class="fa-solid fa-layer-group"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-400 uppercase tracking-wide">Builders Active</h3>
+                    <div class="text-[8rem] font-black text-white leading-none my-4" id="act-builders">4</div>
+                    <div
+                        class="flex items-center gap-2 text-green-400 font-bold uppercase tracking-widest text-sm animate-pulse">
+                        <i class="fa-solid fa-circle text-[0.6rem]"></i> Online
+                    </div>
+                </div>
+
+                <!-- Groover -->
+                <div
+                    class="bg-gray-800 rounded-[2.5rem] border border-gray-700 p-8 flex flex-col items-center justify-center relative overflow-hidden">
+                    <div class="absolute inset-0 bg-yellow-500/10"></div>
+                    <div
+                        class="w-20 h-20 rounded-full bg-yellow-900/50 flex items-center justify-center text-4xl text-yellow-400 mb-6 border border-yellow-500/30">
+                        <i class="fa-solid fa-list-check"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-400 uppercase tracking-wide">Groovers Active</h3>
+                    <div class="text-[8rem] font-black text-white leading-none my-4" id="act-groovers">3</div>
+                    <div
+                        class="flex items-center gap-2 text-green-400 font-bold uppercase tracking-widest text-sm animate-pulse">
+                        <i class="fa-solid fa-circle text-[0.6rem]"></i> Online
+                    </div>
+                </div>
+
+                <!-- Packer -->
+                <div
+                    class="bg-gray-800 rounded-[2.5rem] border border-gray-700 p-8 flex flex-col items-center justify-center relative overflow-hidden">
+                    <div class="absolute inset-0 bg-purple-500/10"></div>
+                    <div
+                        class="w-20 h-20 rounded-full bg-purple-900/50 flex items-center justify-center text-4xl text-purple-400 mb-6 border border-purple-500/30">
+                        <i class="fa-solid fa-box-open"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-400 uppercase tracking-wide">Packers Active</h3>
+                    <div class="text-[8rem] font-black text-white leading-none my-4" id="act-packers">5</div>
+                    <div
+                        class="flex items-center gap-2 text-green-400 font-bold uppercase tracking-widest text-sm animate-pulse">
+                        <i class="fa-solid fa-circle text-[0.6rem]"></i> Online
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW 2: PIPELINE FLOW -->
+        <div id="view-pipeline" class="view-section">
+            <h2 class="text-2xl font-bold text-gray-500 uppercase tracking-widest mb-4">Pipeline Throughput</h2>
+            <div
+                class="flex-1 bg-gray-800 rounded-[3rem] border border-gray-700 p-12 flex items-center justify-between relative overflow-hidden">
+
+                <!-- Stage 1 -->
+                <div class="flex flex-col items-center z-10 w-48">
+                    <div class="text-gray-400 font-bold uppercase tracking-widest mb-4">Builder</div>
+                    <div
+                        class="w-32 h-32 rounded-full bg-blue-600 border-4 border-gray-800 shadow-2xl flex items-center justify-center text-5xl font-black relative">
+                        <span id="pipe-build">12</span>
+                        <div
+                            class="absolute -top-2 -right-2 w-8 h-8 bg-green-500 rounded-full border-4 border-gray-800">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Connector -->
+                <div class="flex-1 h-2 bg-gray-700 mx-4 rounded-full overflow-hidden relative">
+                    <div class="absolute inset-0 flow-connector opacity-20"></div>
+                </div>
+
+                <!-- Stage 2 -->
+                <div class="flex flex-col items-center z-10 w-48">
+                    <div class="text-gray-400 font-bold uppercase tracking-widest mb-4">Groover</div>
+                    <div
+                        class="w-32 h-32 rounded-full bg-yellow-500 border-4 border-gray-800 shadow-2xl flex items-center justify-center text-5xl font-black relative">
+                        <span id="pipe-verify">8</span>
+                        <div
+                            class="absolute -top-2 -right-2 w-8 h-8 bg-green-500 rounded-full border-4 border-gray-800">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Connector -->
+                <div class="flex-1 h-2 bg-gray-700 mx-4 rounded-full overflow-hidden relative">
+                    <div class="absolute inset-0 flow-connector opacity-20"></div>
+                </div>
+
+                <!-- Stage 3 -->
+                <div class="flex flex-col items-center z-10 w-48">
+                    <div class="text-gray-400 font-bold uppercase tracking-widest mb-4">Packer</div>
+                    <div
+                        class="w-32 h-32 rounded-full bg-purple-600 border-4 border-gray-800 shadow-2xl flex items-center justify-center text-5xl font-black relative">
+                        <span id="pipe-pack">5</span>
+                        <div
+                            class="absolute -top-2 -right-2 w-8 h-8 bg-green-500 rounded-full border-4 border-gray-800">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Connector -->
+                <div class="flex-1 h-2 bg-gray-700 mx-4 rounded-full overflow-hidden relative">
+                    <div class="absolute inset-0 flow-connector opacity-20"></div>
+                </div>
+
+                <!-- End -->
+                <div class="flex flex-col items-center z-10 w-48">
+                    <div class="text-gray-400 font-bold uppercase tracking-widest mb-4">Complete</div>
+                    <div
+                        class="w-32 h-32 rounded-full bg-green-600 border-4 border-gray-800 shadow-2xl flex items-center justify-center text-5xl font-black">
+                        <span id="pipe-done">248</span>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- VIEW 3: GLOBAL METRICS -->
+        <div id="view-metrics" class="view-section">
+            <h2 class="text-2xl font-bold text-gray-500 uppercase tracking-widest mb-4">Global Performance</h2>
+            <div class="grid grid-cols-3 gap-8 h-full">
+                <!-- Orders -->
+                <div
+                    class="bg-gray-800 rounded-[2.5rem] border border-gray-700 p-8 flex flex-col items-center justify-center text-center">
+                    <h3 class="text-2xl font-bold text-gray-400 uppercase tracking-wide">Orders Completed</h3>
+                    <div class="text-[8rem] font-black text-white leading-none my-6" id="global-orders">248</div>
+                </div>
+
+                <!-- Replenishments -->
+                <div
+                    class="bg-gray-800 rounded-[2.5rem] border border-gray-700 p-8 flex flex-col items-center justify-center text-center">
+                    <h3 class="text-2xl font-bold text-gray-400 uppercase tracking-wide">Active Replenishments</h3>
+                    <div class="text-[8rem] font-black text-blue-400 leading-none my-6" id="global-replenish">12</div>
+                </div>
+
+                <!-- Efficiency -->
+                <div
+                    class="bg-gray-800 rounded-[2.5rem] border border-gray-700 p-8 flex flex-col items-center justify-center text-center">
+                    <h3 class="text-2xl font-bold text-gray-400 uppercase tracking-wide">Global Efficiency</h3>
+                    <div class="text-[8rem] font-black text-green-400 leading-none my-6" id="global-eff">95%</div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="bg-gray-800 border-t border-gray-700 p-4 flex justify-center items-center gap-3">
+        <!-- View Indicators -->
+        <div class="flex gap-4">
+            <span class="w-3 h-3 rounded-full bg-blue-500 transition-all scale-125" id="ind-0"></span>
+            <span class="w-3 h-3 rounded-full bg-gray-600 transition-all" id="ind-1"></span>
+            <span class="w-3 h-3 rounded-full bg-gray-600 transition-all" id="ind-2"></span>
+        </div>
+    </footer>
+
+    <script>
+        // --- VIEW ROTATION ---
+        const views = [
+            document.getElementById('view-activity'),
+            document.getElementById('view-pipeline'),
+            document.getElementById('view-metrics')
+        ];
+        const indicators = [
+            document.getElementById('ind-0'),
+            document.getElementById('ind-1'),
+            document.getElementById('ind-2')
+        ];
+        let currentView = 0;
+
+        function rotateView() {
+            // Hide current
+            views[currentView].classList.remove('view-active');
+            indicators[currentView].classList.remove('bg-blue-500', 'scale-125');
+            indicators[currentView].classList.add('bg-gray-600');
+
+            // Increment
+            currentView = (currentView + 1) % views.length;
+
+            // Show next
+            views[currentView].classList.add('view-active');
+            indicators[currentView].classList.remove('bg-gray-600');
+            indicators[currentView].classList.add('bg-blue-500', 'scale-125');
+        }
+
+        setInterval(rotateView, 15000); // 15s Rotation
+
+        // --- SIMULATION ---
+        const state = {
+            builders: 4,
+            groovers: 3,
+            packers: 5,
+            pipe: { b: 12, g: 8, p: 5, d: 248 },
+            replenish: 12,
+            eff: 95
+        };
+
+        function updateUI() {
+            // View 1
+            document.getElementById('act-builders').textContent = state.builders;
+            document.getElementById('act-groovers').textContent = state.groovers;
+            document.getElementById('act-packers').textContent = state.packers;
+
+            // View 2
+            document.getElementById('pipe-build').textContent = state.pipe.b;
+            document.getElementById('pipe-verify').textContent = state.pipe.g;
+            document.getElementById('pipe-pack').textContent = state.pipe.p;
+            document.getElementById('pipe-done').textContent = state.pipe.d;
+
+            // View 3
+            document.getElementById('global-orders').textContent = state.pipe.d;
+            document.getElementById('global-replenish').textContent = state.replenish;
+            document.getElementById('global-eff').textContent = state.eff + '%';
+        }
+
+        setInterval(() => {
+            const rand = Math.random();
+
+            // Flow Simulation
+            if (rand > 0.5) state.pipe.b += 1; // New Order
+            if (rand > 0.5 && state.pipe.b > 0) { state.pipe.b--; state.pipe.g++; }
+            if (rand > 0.5 && state.pipe.g > 0) { state.pipe.g--; state.pipe.p++; }
+            if (rand > 0.5 && state.pipe.p > 0) { state.pipe.p--; state.pipe.d++; }
+
+            // Active Staff Flux
+            if (rand > 0.9) state.builders = Math.max(2, Math.min(6, state.builders + (Math.random() > 0.5 ? 1 : -1)));
+
+            updateUI();
+        }, 2000);
+
+        // Clock
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById('clock').textContent = now.toLocaleTimeString('en-US', { hour12: false });
+        }, 1000);
+
+        updateUI();
+
+    </script>
+</body>
+
+</html>

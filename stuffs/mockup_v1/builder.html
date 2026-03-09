@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Builder Workflow</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="styles.css">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0ea5e9', // Sky 500
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            900: '#0c4a6e',
+                        },
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: transparent;
+            /* Allow iframe transparent bg if needed */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Mobile Simulator Frame -->
+    <div id="builder" class="mobile-frame">
+        <div class="mobile-status-bar"></div>
+
+        <!-- Screen 1: Login -->
+        <div id="builder-login"
+            class="flex-1 flex flex-col justify-center px-8 bg-white h-full absolute inset-0 z-20 transition-transform duration-300">
+            <div class="mb-10 text-center">
+                <div class="w-16 h-16 bg-brand-600 rounded-xl mx-auto flex items-center justify-center mb-4 shadow-lg">
+                    <i class="fa-solid fa-layer-group text-3xl text-white"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-gray-800">PIM 3.0</h2>
+                <!-- "Warehouse Operations" label removed -->
+            </div>
+
+            <form id="login-form" class="space-y-5">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+                    <div class="relative">
+                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                            <i class="fa-solid fa-user"></i>
+                        </span>
+                        <input type="text" value="operator_01"
+                            class="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-shadow"
+                            readonly>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                    <div class="relative">
+                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                            <i class="fa-solid fa-lock"></i>
+                        </span>
+                        <input type="password" value="********"
+                            class="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-shadow"
+                            readonly>
+                    </div>
+                </div>
+                <button type="submit"
+                    class="w-full bg-brand-600 hover:bg-brand-700 text-white font-semibold py-3.5 rounded-lg shadow-md hover:shadow-lg transition-all builder-btn">
+                    Login
+                </button>
+            </form>
+        </div>
+
+        <!-- Screen 2: Picker Menu -->
+        <div id="builder-menu" class="flex-1 flex flex-col bg-gray-50 h-full absolute inset-0 z-40 hidden">
+            <!-- Header -->
+            <header class="bg-white p-4 shadow-sm flex justify-between items-center z-10">
+                <div class="flex items-center gap-2">
+                    <div
+                        class="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 text-sm font-bold border border-gray-300">
+                        OP</div>
+                    <span class="font-semibold text-gray-700">Hi, Operator</span>
+                </div>
+                <button id="logout-btn" class="text-gray-400 hover:text-red-500">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                </button>
+            </header>
+
+            <!-- Menu Layout -->
+            <div class="flex-1 p-4 flex flex-col gap-4">
+
+                <!-- Row 1: Start Scan (Big Button) -->
+                <button id="btn-start-scan"
+                    class="flex-1 bg-gradient-to-br from-brand-500 to-brand-700 rounded-2xl shadow-lg p-6 flex flex-col items-center justify-center text-white builder-btn hover:shadow-xl border border-brand-400">
+                    <div
+                        class="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mb-4 backdrop-blur-sm">
+                        <i class="fa-solid fa-barcode text-4xl"></i>
+                    </div>
+                    <span class="text-2xl font-bold tracking-wide">START SCAN</span>
+                    <span class="text-brand-100 text-sm mt-1">Tap to begin picking</span>
+                </button>
+
+                <!-- Row 2: Batches -->
+                <div class="h-32 grid grid-cols-2 gap-4">
+                    <!-- View My Batch -->
+                    <button id="btn-my-batch"
+                        class="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 flex flex-col items-center justify-center hover:border-brand-300 transition-colors builder-btn">
+                        <div class="relative mb-2">
+                            <i class="fa-solid fa-clipboard-list text-3xl text-purple-500"></i>
+                            <span id="my-batch-badge"
+                                class="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center hidden">0</span>
+                        </div>
+                        <span class="font-semibold text-gray-700">My Batch</span>
+                    </button>
+
+                    <!-- View All Batches -->
+                    <button id="btn-all-batches"
+                        class="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 flex flex-col items-center justify-center hover:border-brand-300 transition-colors builder-btn">
+                        <div class="relative mb-2">
+                            <i class="fa-solid fa-layer-group text-3xl text-orange-500"></i>
+                            <span id="all-batches-badge"
+                                class="absolute -top-2 -right-2 bg-gray-600 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">12</span>
+                        </div>
+                        <span class="font-semibold text-gray-700">All Batches</span>
+                    </button>
+                </div>
+
+            </div>
+
+            <!-- Bottom Nav -->
+            <div class="bg-white border-t border-gray-200 p-3 flex justify-around text-gray-400 text-xl">
+                <button id="btn-nav-home" class="text-brand-600 flex flex-col items-center gap-1">
+                    <i class="fa-solid fa-house"></i>
+                    <span class="text-[10px] font-medium">Home</span>
+                </button>
+                <button id="btn-nav-stats"
+                    class="hover:text-brand-600 flex flex-col items-center gap-1 transition-colors">
+                    <i class="fa-solid fa-chart-simple"></i>
+                    <span class="text-[10px] font-medium">Stats</span>
+                </button>
+                <button id="btn-nav-settings"
+                    class="hover:text-brand-600 flex flex-col items-center gap-1 transition-colors">
+                    <i class="fa-solid fa-gear"></i>
+                    <span class="text-[10px] font-medium">Settings</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Screen 3: Scan -->
+        <div id="builder-scan" class="flex-1 flex flex-col bg-gray-50 h-full absolute inset-0 z-30 hidden">
+            <header class="bg-white p-4 shadow-sm flex items-center gap-4 z-10">
+                <button class="nav-back text-gray-500 hover:text-brand-600"><i
+                        class="fa-solid fa-arrow-left text-xl"></i></button>
+                <h2 class="font-bold text-gray-800 text-lg">Scan to Claim</h2>
+            </header>
+            <div class="flex-1 p-6 flex flex-col items-center justify-center gap-8">
+                <div class="w-full">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Manual Entry</label>
+                    <div class="flex gap-2">
+                        <input type="text" placeholder="Enter Order ID"
+                            class="flex-1 px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none">
+                        <button class="bg-gray-800 text-white px-4 rounded-lg"><i
+                                class="fa-solid fa-arrow-right"></i></button>
+                    </div>
+                </div>
+
+                <div class="flex flex-col items-center gap-4">
+                    <p class="text-gray-500 text-sm">Tap barcode to simulate scan</p>
+                    <img id="sim-scan-target"
+                        src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/84/EAN13.svg/1200px-EAN13.svg.png"
+                        alt="Scan Barcode"
+                        class="w-64 h-32 object-cover border-2 border-dashed border-gray-300 rounded-xl hover:border-brand-500 hover:opacity-80 cursor-pointer transition-all bg-white p-2">
+                </div>
+            </div>
+        </div>
+
+        <!-- Screen 4: My Batches -->
+        <div id="builder-my-batches" class="flex-1 flex flex-col bg-gray-50 h-full absolute inset-0 z-30 hidden">
+            <header class="bg-white p-4 shadow-sm flex items-center gap-4 z-10">
+                <button class="nav-back text-gray-500 hover:text-brand-600"><i
+                        class="fa-solid fa-arrow-left text-xl"></i></button>
+                <h2 class="font-bold text-gray-800 text-lg">My Active Batch</h2>
+            </header>
+            <div id="my-batches-list" class="flex-1 p-4 overflow-y-auto space-y-4">
+                <!-- Content injected by JS -->
+                <div class="text-center text-gray-500 mt-10">No active batch. <br>Scan to claim one.</div>
+            </div>
+        </div>
+
+        <!-- Screen 5: All Batches -->
+        <div id="builder-all-batches" class="flex-1 flex flex-col bg-gray-50 h-full absolute inset-0 z-30 hidden">
+            <header class="bg-white p-4 shadow-sm flex items-center gap-4 z-10">
+                <button class="nav-back text-gray-500 hover:text-brand-600"><i
+                        class="fa-solid fa-arrow-left text-xl"></i></button>
+                <h2 class="font-bold text-gray-800 text-lg">All Batches</h2>
+            </header>
+            <div class="flex-1 overflow-y-auto relative">
+                <!-- Sticky Active Batch Section -->
+                <div id="sticky-active-batch"
+                    class="sticky top-0 z-20 bg-brand-50 border-b border-brand-100 p-4 shadow-sm hidden">
+                    <h3 class="text-xs font-bold text-brand-600 uppercase tracking-wider mb-2">My Current Batch</h3>
+                    <div id="sticky-batch-content"></div>
+                </div>
+
+                <!-- Scrollable List -->
+                <div id="all-batches-list" class="p-4 space-y-3">
+                    <!-- Content injected by JS -->
+                </div>
+            </div>
+        </div>
+
+
+
+        <!-- NEW Screen 7: Batch Details View -->
+        <div id="builder-batch-details" class="flex-1 flex flex-col bg-gray-50 h-full absolute inset-0 z-40 hidden">
+            <header class="bg-white p-4 shadow-sm flex items-center gap-4 z-10">
+                <button class="nav-back text-gray-500 hover:text-brand-600"><i
+                        class="fa-solid fa-arrow-left text-xl"></i></button>
+                <h2 class="font-bold text-gray-800 text-lg">Batch Details</h2>
+            </header>
+
+            <div class="flex-1 overflow-y-auto pb-6">
+                <div class="p-6 bg-white border-b border-gray-200">
+                    <div class="flex justify-between items-start mb-4">
+                        <h1 id="details-batch-id" class="text-3xl font-bold text-gray-900">Batch 2401</h1>
+                        <div id="details-batch-tags" class="flex flex-col items-end gap-1">
+                            <!-- Tags Injected Here -->
+                        </div>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div class="mb-6">
+                        <div class="flex justify-between text-sm mb-1">
+                            <span class="font-medium text-gray-700">Progress</span>
+                            <span id="details-progress-text" class="font-bold text-brand-600">30%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-3">
+                            <div id="details-progress-bar"
+                                class="bg-brand-500 h-3 rounded-full transition-all duration-500" style="width: 30%">
+                            </div>
+                        </div>
+                        <p id="details-progress-sub" class="text-xs text-gray-500 mt-1 text-right">6 of 20 orders
+                            completed</p>
+                    </div>
+
+                    <!-- Printer Info -->
+                    <div class="flex items-center gap-3 bg-gray-50 p-3 rounded-lg border border-gray-200">
+                        <div
+                            class="w-10 h-10 bg-white rounded-full flex items-center justify-center border border-gray-200 text-gray-500">
+                            <i class="fa-solid fa-print"></i>
+                        </div>
+                        <div>
+                            <span class="block text-xs text-gray-500 uppercase font-bold">Printer</span>
+                            <span id="details-printer-id" class="block font-bold text-gray-800">#3</span>
+                        </div>
+                        <div class="ml-auto text-right">
+                            <span class="block text-xs text-gray-500 uppercase font-bold">Printed</span>
+                            <span id="details-print-time" class="block font-bold text-gray-800 text-sm">10:45 AM</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stats Row -->
+                <div class="grid grid-cols-2 bg-white mt-4 py-4 divide-x divide-gray-100 border-y border-gray-200">
+                    <div class="text-center">
+                        <span id="details-total-orders" class="block text-2xl font-bold text-gray-800">20</span>
+                        <span class="text-xs text-gray-500 uppercase tracking-wide">Total Orders</span>
+                    </div>
+                    <div class="text-center">
+                        <span id="details-total-items" class="block text-2xl font-bold text-gray-800">85</span>
+                        <span class="text-xs text-gray-500 uppercase tracking-wide">Total Items</span>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="p-6 mt-4 space-y-4">
+                    <button id="btn-scanner-shortcut"
+                        class="w-full bg-gradient-to-r from-brand-600 to-brand-500 text-white rounded-2xl p-4 shadow-lg flex items-center justify-between hover:shadow-xl transition-all">
+                        <span class="flex items-center gap-3 font-bold text-lg">
+                            <i class="fa-solid fa-qrcode text-2xl bg-white/20 p-2 rounded-lg"></i>
+                            Scan Next Order
+                        </span>
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+
+                    <button id="btn-mark-batch-picked"
+                        class="w-full bg-orange-50 text-orange-600 border border-orange-200 rounded-xl p-4 font-bold hover:bg-orange-100 transition-colors flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-check-double"></i> Mark Batch as Picked
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- NEW Screen 8: Order Picking Screen -->
+        <div id="builder-order-picking" class="flex-1 flex flex-col bg-gray-50 h-full absolute inset-0 z-50 hidden">
+            <header class="bg-white p-4 shadow-sm flex items-center gap-4 z-10 border-b border-gray-200">
+                <button class="nav-back-details text-gray-500 hover:text-brand-600"><i
+                        class="fa-solid fa-arrow-left text-xl"></i></button>
+                <div>
+                    <span class="block text-xs text-gray-500 uppercase">Picking Order</span>
+                    <h2 id="pick-order-id" class="font-bold text-gray-800 text-lg">#10234</h2>
+                </div>
+                <div id="pick-order-tag" class="ml-auto">
+                    <!-- Dynamic tag -->
+                </div>
+            </header>
+
+            <div class="flex-1 p-6 flex flex-col gap-6 overflow-y-auto">
+
+                <!-- Box Recommendation -->
+                <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center gap-4">
+                    <i class="fa-solid fa-box-open text-3xl text-blue-500"></i>
+                    <div>
+                        <span class="block text-blue-800 font-bold text-lg">Use Box: <span
+                                id="pick-box-size">10x8x6</span></span>
+                        <span class="text-blue-600 text-sm">Recommended size</span>
+                    </div>
+                </div>
+
+                <!-- Item Count -->
+                <div class="flex-1 flex flex-col items-center justify-center py-8">
+                    <span class="text-gray-400 font-medium uppercase tracking-widest text-sm mb-2">Total Items</span>
+                    <span id="pick-total-qty" class="text-6xl font-black text-gray-800">12</span>
+                    <span class="text-gray-400 mt-2">Pieces to pick</span>
+                </div>
+
+                <!-- Actions -->
+                <div class="mt-auto space-y-4">
+                    <button id="btn-complete-order"
+                        class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-5 rounded-2xl shadow-lg text-xl flex justify-center items-center gap-3 transition-transform active:scale-95">
+                        <i class="fa-solid fa-check-circle text-2xl"></i> Complete Order
+                    </button>
+
+                    <button id="btn-exception-order"
+                        class="w-full bg-white border-2 border-red-100 text-red-500 hover:bg-red-50 font-bold py-4 rounded-2xl flex justify-center items-center gap-2 transition-colors">
+                        <i class="fa-solid fa-triangle-exclamation"></i> Add to Exception
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast Notification -->
+        <div id="toast-notification"
+            class="fixed bottom-24 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-6 py-3 rounded-full shadow-2xl z-50 flex items-center gap-3 transition-opacity duration-300 opacity-0 pointer-events-none">
+            <i class="fa-solid fa-circle-check text-green-400"></i>
+            <span id="toast-message" class="font-medium">Notification</span>
+        </div>
+
+        <!-- NEW Screen 9: My Stats -->
+        <div id="builder-stats" class="flex-1 flex flex-col bg-gray-50 h-full absolute inset-0 z-30 hidden">
+            <header class="bg-white p-4 shadow-sm flex justify-between items-center z-10">
+                <div>
+                    <h2 class="font-bold text-gray-800 text-xl">My Stats</h2>
+                    <p class="text-xs text-gray-500">Today's Performance</p>
+                </div>
+                <div class="flex items-center gap-2 bg-green-50 px-2 py-1 rounded-full border border-green-100">
+                    <span class="relative flex h-2 w-2">
+                        <span
+                            class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                    </span>
+                    <span class="text-[10px] font-bold text-green-700 uppercase tracking-wide">Live</span>
+                </div>
+            </header>
+
+            <div class="flex-1 p-4 overflow-y-auto">
+                <div class="grid grid-cols-2 gap-4">
+                    <!-- Card 1 -->
+                    <div
+                        class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center justify-center gap-2">
+                        <div
+                            class="w-10 h-10 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mb-1">
+                            <i class="fa-solid fa-boxes-stacked"></i>
+                        </div>
+                        <span class="text-3xl font-bold text-gray-800">47</span>
+                        <span class="text-xs text-gray-400 font-medium uppercase tracking-wider">Items Picked</span>
+                    </div>
+
+                    <!-- Card 2 -->
+                    <div
+                        class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center justify-center gap-2">
+                        <div
+                            class="w-10 h-10 bg-purple-50 text-purple-600 rounded-full flex items-center justify-center mb-1">
+                            <i class="fa-solid fa-bullseye"></i>
+                        </div>
+                        <span class="text-3xl font-bold text-gray-800">98.5%</span>
+                        <span class="text-xs text-gray-400 font-medium uppercase tracking-wider">Accuracy</span>
+                    </div>
+
+                    <!-- Card 3 -->
+                    <div
+                        class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center justify-center gap-2">
+                        <div
+                            class="w-10 h-10 bg-orange-50 text-orange-600 rounded-full flex items-center justify-center mb-1">
+                            <i class="fa-regular fa-clock"></i>
+                        </div>
+                        <span class="text-3xl font-bold text-gray-800">4.2</span>
+                        <span class="text-xs text-gray-400 font-medium uppercase tracking-wider">Avg Time (min)</span>
+                    </div>
+
+                    <!-- Card 4 -->
+                    <div
+                        class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center justify-center gap-2">
+                        <div
+                            class="w-10 h-10 bg-green-50 text-green-600 rounded-full flex items-center justify-center mb-1">
+                            <i class="fa-solid fa-clipboard-check"></i>
+                        </div>
+                        <span class="text-3xl font-bold text-gray-800">12</span>
+                        <span class="text-xs text-gray-400 font-medium uppercase tracking-wider">Orders Done</span>
+                    </div>
+                </div>
+
+                <!-- Recent Activity / Chart Placeholder -->
+                <div class="mt-6 bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+                    <h3 class="font-bold text-gray-800 mb-4">Hourly Output</h3>
+                    <div class="flex items-end justify-between h-32 gap-2 text-xs text-gray-400">
+                        <div class="w-full bg-brand-100 rounded-t-lg relative group" style="height: 40%">
+                            <span
+                                class="absolute -top-6 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-[10px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity">8</span>
+                        </div>
+                        <div class="w-full bg-brand-200 rounded-t-lg relative group" style="height: 60%">
+                            <span
+                                class="absolute -top-6 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-[10px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity">12</span>
+                        </div>
+                        <div class="w-full bg-brand-500 rounded-t-lg relative group" style="height: 85%">
+                            <span
+                                class="absolute -top-6 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-[10px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity">17</span>
+                        </div>
+                        <div class="w-full bg-brand-300 rounded-t-lg relative group" style="height: 50%">
+                            <span
+                                class="absolute -top-6 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-[10px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity">10</span>
+                        </div>
+                    </div>
+                    <div class="flex justify-between mt-2 text-xs text-gray-400 px-1">
+                        <span>9AM</span>
+                        <span>10AM</span>
+                        <span>11AM</span>
+                        <span>12PM</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Start Bottom Nav (Duplicate for Stats Screen) -->
+            <div class="bg-white border-t border-gray-200 p-3 flex justify-around text-gray-400 text-xl mt-auto z-20">
+                <button id="btn-nav-home-stats"
+                    class="hover:text-brand-600 flex flex-col items-center gap-1 transition-colors">
+                    <i class="fa-solid fa-house"></i>
+                    <span class="text-[10px] font-medium">Home</span>
+                </button>
+                <button id="btn-nav-stats-stats" class="text-brand-600 flex flex-col items-center gap-1">
+                    <i class="fa-solid fa-chart-simple"></i>
+                    <span class="text-[10px] font-medium">Stats</span>
+                </button>
+                <button id="btn-nav-settings-stats"
+                    class="hover:text-brand-600 flex flex-col items-center gap-1 transition-colors">
+                    <i class="fa-solid fa-gear"></i>
+                    <span class="text-[10px] font-medium">Settings</span>
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- MOCK DATA ---
+            const boxSizes = ['8x8x6', '10x8x6', '12x12x8', '6x6x4'];
+            const orderTags = ['VIP', 'Normal', 'Express'];
+
+            const generateTags = () => {
+                const tags = [];
+                if (Math.random() > 0.5) tags.push({ text: 'In Progress', color: 'bg-blue-100 text-blue-700 border-blue-200' });
+                const priority = Math.random();
+                if (priority > 0.7) tags.push({ text: 'High', color: 'bg-red-100 text-red-700 border-red-200' });
+                else if (priority > 0.4) tags.push({ text: 'Standard', color: 'bg-gray-100 text-gray-700 border-gray-200' });
+
+                if (tags.length === 0) tags.push({ text: 'Pending', color: 'bg-yellow-100 text-yellow-700 border-yellow-200' });
+                return tags;
+            };
+
+            const generateOrders = (count) => {
+                return Array.from({ length: count }, (_, i) => ({
+                    id: `ORD-${1000 + i}`,
+                    qty: Math.floor(Math.random() * 10) + 1,
+                    boxSize: boxSizes[Math.floor(Math.random() * boxSizes.length)],
+                    tag: orderTags[Math.floor(Math.random() * orderTags.length)],
+                    status: 'Pending' // Pending, Completed, Exception
+                }));
+            };
+
+            const mockBatches = Array.from({ length: 12 }, (_, i) => {
+                const totalOrders = Math.floor(Math.random() * 8) + 1;
+                return {
+                    id: `240${i + 1}`,
+                    totalOrders: totalOrders,
+                    orders: generateOrders(totalOrders), // Populated orders
+                    totalItems: Math.floor(Math.random() * 30) + 5,
+                    printerId: Math.floor(Math.random() * 5) + 1,
+                    printTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                    assignedToMe: false,
+                    tags: generateTags()
+                };
+            });
+
+            let myBatch = null;
+            let selectedBatch = null; // Used when viewing details before claim or my batch details
+            let currentPickingOrderIndex = 0;
+            let scanContext = 'claim'; // 'claim' or 'batch_order'
+
+            // --- DOM ELEMENTS ---
+            const views = {
+                login: document.getElementById('builder-login'),
+                menu: document.getElementById('builder-menu'),
+                scan: document.getElementById('builder-scan'),
+                myBatches: document.getElementById('builder-my-batches'),
+                allBatches: document.getElementById('builder-all-batches'),
+                // actions: removed
+                details: document.getElementById('builder-batch-details'),
+                picking: document.getElementById('builder-order-picking'),
+                stats: document.getElementById('builder-stats')
+            };
+
+            const badges = {
+                my: document.getElementById('my-batch-badge'),
+                all: document.getElementById('all-batches-badge')
+            };
+
+            const lists = {
+                my: document.getElementById('my-batches-list'),
+                all: document.getElementById('all-batches-list'),
+                sticky: document.getElementById('sticky-active-batch'),
+                stickyContent: document.getElementById('sticky-batch-content')
+            };
+
+            // Details Elements
+            const detailsUI = {
+                id: document.getElementById('details-batch-id'),
+                tags: document.getElementById('details-batch-tags'),
+                progressText: document.getElementById('details-progress-text'),
+                progressBar: document.getElementById('details-progress-bar'),
+                progressSub: document.getElementById('details-progress-sub'),
+                printer: document.getElementById('details-printer-id'),
+                printTime: document.getElementById('details-print-time'),
+                orders: document.getElementById('details-total-orders'),
+                items: document.getElementById('details-total-items')
+            };
+
+            // Picking Elements
+            const pickingUI = {
+                id: document.getElementById('pick-order-id'),
+                tag: document.getElementById('pick-order-tag'),
+                box: document.getElementById('pick-box-size'),
+                qty: document.getElementById('pick-total-qty')
+            };
+
+            const toast = document.getElementById('toast-notification');
+            const toastMsg = document.getElementById('toast-message');
+
+            // --- NAVIGATION HELPERS ---
+            function showView(viewName) {
+                // Hide all
+                Object.values(views).forEach(el => {
+                    // Safety check in case removed views are accessed
+                    if (el && el.id !== 'builder-login') el.classList.add('hidden');
+                });
+
+                if (viewName === 'login') {
+                    views.login.classList.remove('-translate-y-full');
+                    views.menu.classList.add('hidden');
+                } else if (viewName === 'menu') {
+                    views.login.classList.add('-translate-y-full');
+                    views.menu.classList.remove('hidden');
+                } else {
+                    if (views[viewName]) views[viewName].classList.remove('hidden');
+                }
+            }
+
+            function showToast(message, duration = 3000) {
+                toastMsg.textContent = message;
+                toast.classList.remove('opacity-0');
+                setTimeout(() => {
+                    toast.classList.add('opacity-0');
+                }, duration);
+            }
+
+            // --- UI RENDER LOGIC ---
+            function renderBatchDetails(batch) {
+                detailsUI.id.textContent = `Batch ${batch.id}`;
+
+                // Tags
+                detailsUI.tags.innerHTML = batch.tags.map(tag =>
+                    `<span class="${tag.color} text-xs px-2 py-0.5 rounded border font-medium">${tag.text}</span>`
+                ).join('');
+
+                // Progress
+                const completedCount = batch.orders.filter(o => o.status === 'Completed').length;
+                const percentage = Math.round((completedCount / batch.orders.length) * 100);
+
+                detailsUI.progressText.textContent = `${percentage}%`;
+                detailsUI.progressBar.style.width = `${percentage}%`;
+                detailsUI.progressSub.textContent = `${completedCount} of ${batch.orders.length} orders completed`;
+
+                // Info
+                detailsUI.printer.textContent = `#${batch.printerId}`;
+                detailsUI.printTime.textContent = batch.printTime;
+                detailsUI.orders.textContent = batch.orders.length;
+                detailsUI.items.textContent = batch.totalItems;
+            }
+
+            function renderOrderPicking(order) {
+                pickingUI.id.textContent = `#${order.id}`;
+                pickingUI.box.textContent = order.boxSize;
+                pickingUI.qty.textContent = order.qty;
+
+                // Tag styling
+                let tagClass = 'bg-gray-100 text-gray-600';
+                if (order.tag === 'VIP') tagClass = 'bg-purple-100 text-purple-700 border-purple-200';
+                if (order.tag === 'Express') tagClass = 'bg-yellow-100 text-yellow-700 border-yellow-200';
+
+                pickingUI.tag.innerHTML = `<span class="${tagClass} text-xs px-3 py-1 rounded-full border font-bold uppercase">${order.tag}</span>`;
+            }
+
+            // --- BATCH CARD ---
+            function createBatchCard(batch, isCompact = false) {
+                const borderColor = batch.assignedToMe ? 'border-brand-400 ring-1 ring-brand-100' : 'border-gray-200';
+                const tagsHtml = batch.tags.map(tag =>
+                    `<span class="${tag.color} text-xs px-2 py-0.5 rounded border font-medium">${tag.text}</span>`
+                ).join('');
+
+                const clickAction = `window.selectBatch('${batch.id}')`;
+
+                return `
+                    <div onclick="${clickAction}" class="bg-white rounded-xl shadow-sm border ${borderColor} p-5 flex flex-col gap-3 cursor-pointer hover:shadow-md transition-shadow">
+                        <div>
+                            <h4 class="font-bold text-gray-900 text-lg mb-2">Batch ${batch.id}</h4>
+                            <div class="flex flex-wrap gap-2">
+                                ${tagsHtml}
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-3 gap-3 mt-2">
+                            <div class="bg-gray-50 p-2.5 rounded-lg">
+                                <div class="flex items-center gap-1.5 text-gray-500 text-xs mb-1">
+                                    <i class="fa-solid fa-cart-shopping"></i><span>Orders</span>
+                                </div>
+                                <span class="block font-bold text-gray-800 text-xl">${batch.orders.length}</span>
+                            </div>
+                            <div class="bg-gray-50 p-2.5 rounded-lg">
+                                <div class="flex items-center gap-1.5 text-gray-500 text-xs mb-1">
+                                    <i class="fa-solid fa-layer-group"></i><span>Items</span>
+                                </div>
+                                <span class="block font-bold text-gray-800 text-xl">${batch.totalItems}</span>
+                            </div>
+                            <div class="bg-gray-50 p-2.5 rounded-lg">
+                                <div class="flex items-center gap-1.5 text-gray-500 text-xs mb-1">
+                                    <i class="fa-solid fa-print"></i><span>Printer</span>
+                                </div>
+                                <span class="block font-bold text-gray-800 text-xl">#${batch.printerId}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Global handler for onclick
+            window.selectBatch = (batchId) => {
+                const batch = mockBatches.find(b => b.id === batchId);
+                if (batch) {
+                    selectedBatch = batch;
+                    // Direct to Details
+                    renderBatchDetails(selectedBatch);
+                    showView('details');
+                }
+            };
+
+            function updateUI() {
+                // Badges
+                const startCount = myBatch ? 1 : 0;
+                badges.my.textContent = startCount;
+                badges.my.classList.toggle('hidden', startCount === 0);
+                badges.all.textContent = mockBatches.length;
+
+                // Lists
+                if (myBatch) {
+                    lists.my.innerHTML = createBatchCard(myBatch);
+                    lists.sticky.classList.remove('hidden');
+                    lists.stickyContent.innerHTML = createBatchCard(myBatch, true);
+                } else {
+                    lists.my.innerHTML = '<div class="text-center text-gray-500 mt-10">No active batch. <br>Scan to claim one.</div>';
+                    lists.sticky.classList.add('hidden');
+                }
+
+                lists.all.innerHTML = mockBatches
+                    .filter(b => !b.assignedToMe && b.totalOrders > 0) // Hide completed/empty
+                    .map(b => createBatchCard(b))
+                    .join('');
+            }
+
+
+            // --- EVENT LISTENERS ---
+
+            // Login
+            document.getElementById('login-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                showView('menu');
+            });
+
+            // Logout
+            document.getElementById('logout-btn').addEventListener('click', () => {
+                showView('login');
+            });
+
+            // Menu Buttons
+            document.getElementById('btn-start-scan').addEventListener('click', () => {
+                scanContext = 'claim';
+                showView('scan');
+            });
+            document.getElementById('btn-my-batch').addEventListener('click', () => { updateUI(); showView('myBatches'); });
+            document.getElementById('btn-all-batches').addEventListener('click', () => { updateUI(); showView('allBatches'); });
+
+            // Navigation Helpers
+            const navHomeBtns = ['btn-nav-home', 'btn-nav-home-stats'];
+            const navStatsBtns = ['btn-nav-stats', 'btn-nav-stats-stats'];
+
+            navHomeBtns.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.addEventListener('click', () => showView('menu'));
+            });
+
+            navStatsBtns.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.addEventListener('click', () => showView('stats'));
+            });
+
+            // Back Buttons
+            document.querySelectorAll('.nav-back').forEach(btn => btn.addEventListener('click', () => showView('menu')));
+            document.querySelector('.nav-back-details').addEventListener('click', () => showView('details')); // Order picking back to details
+
+            // Scan Screen -> Claim -> My Batches
+            document.getElementById('sim-scan-target').addEventListener('click', () => {
+                if (scanContext === 'batch_order') {
+                    // --- SCENARIO: SCAN NEXT ORDER ---
+                    if (selectedBatch) {
+                        const nextOrderIndex = selectedBatch.orders.findIndex(o => o.status === 'Pending');
+                        if (nextOrderIndex !== -1) {
+                            currentPickingOrderIndex = nextOrderIndex;
+                            renderOrderPicking(selectedBatch.orders[nextOrderIndex]);
+                            showView('picking');
+                        } else {
+                            showToast("No pending orders found in this batch.");
+                            showView('details');
+                        }
+                    }
+                    return;
+                }
+
+                // --- SCENARIO: CLAIM BATCH --- (Default)
+                if (!myBatch) {
+                    const available = mockBatches.filter(b => !b.assignedToMe);
+                    if (available.length > 0) {
+                        const randomBatch = available[Math.floor(Math.random() * available.length)];
+                        randomBatch.assignedToMe = true;
+                        myBatch = randomBatch;
+                        selectedBatch = myBatch; // Auto select
+
+                        const hasInProgress = myBatch.tags.some(t => t.text === 'In Progress');
+                        if (!hasInProgress) myBatch.tags.unshift({ text: 'In Progress', color: 'bg-blue-100 text-blue-700 border-blue-200' });
+
+                        updateUI();
+
+                        renderBatchDetails(myBatch);
+
+                        // Auto-start first pending order
+                        const nextOrderIndex = myBatch.orders.findIndex(o => o.status === 'Pending');
+                        if (nextOrderIndex !== -1) {
+                            currentPickingOrderIndex = nextOrderIndex;
+                            renderOrderPicking(myBatch.orders[nextOrderIndex]);
+                            showToast(`Claimed Batch ${myBatch.id}`);
+                            showView('picking');
+                        } else {
+                            showView('details');
+                        }
+                    } else { alert('No more batches!'); }
+                } else {
+                    alert(`Finish Batch ${myBatch.id} first!`);
+                    showView('myBatches');
+                }
+            });
+
+            // --- BATCH DETAILS SCREEN ---
+            document.getElementById('btn-scanner-shortcut').addEventListener('click', () => {
+                // Check if any pending remain before scanning
+                const nextOrderIndex = selectedBatch.orders.findIndex(o => o.status === 'Pending');
+                if (nextOrderIndex !== -1) {
+                    scanContext = 'batch_order';
+                    showView('scan'); // Intermediate scan screen
+                } else {
+                    showToast("All orders completed!");
+                }
+            });
+
+            // Bulk Complete (Moved from Actions)
+            document.getElementById('btn-mark-batch-picked').addEventListener('click', () => {
+                if (confirm("Are you sure you want to mark the entire batch as picked?")) {
+                    if (selectedBatch) {
+                        selectedBatch.orders.forEach(o => o.status = 'Completed');
+                        selectedBatch.assignedToMe = false; // Release
+                        const index = mockBatches.indexOf(selectedBatch);
+                        if (index > -1) mockBatches.splice(index, 1);
+                        if (myBatch === selectedBatch) myBatch = null;
+
+                        updateUI();
+                        showToast("Batch Completed!");
+                        showView('menu');
+                    }
+                }
+            });
+
+            // --- ORDER PICKING SCREEN ---
+            document.getElementById('btn-complete-order').addEventListener('click', () => {
+                // Mark current as complete
+                if (selectedBatch && selectedBatch.orders[currentPickingOrderIndex]) {
+                    selectedBatch.orders[currentPickingOrderIndex].status = 'Completed';
+
+                    // Check if any pending remain
+                    const remaining = selectedBatch.orders.filter(o => o.status === 'Pending');
+
+                    if (remaining.length > 0) {
+                        // Go back to details
+                        renderBatchDetails(selectedBatch);
+                        showView('details');
+                    } else {
+                        // All done!
+                        selectedBatch.assignedToMe = false;
+                        const index = mockBatches.indexOf(selectedBatch);
+                        if (index > -1) mockBatches.splice(index, 1);
+                        if (myBatch === selectedBatch) myBatch = null;
+
+                        updateUI();
+                        showToast("All orders processed! Batch Complete.", 4000);
+                        showView('menu');
+                    }
+                }
+            });
+
+            document.getElementById('btn-exception-order').addEventListener('click', () => {
+                if (selectedBatch && selectedBatch.orders[currentPickingOrderIndex]) {
+                    selectedBatch.orders[currentPickingOrderIndex].status = 'Exception';
+
+                    showToast("Order marked as Exception");
+                    renderBatchDetails(selectedBatch);
+                    showView('details');
+                }
+            });
+
+            // Initial Render
+            updateUI();
+        });
+    </script>
+
+</html>

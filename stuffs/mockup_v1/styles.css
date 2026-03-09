@@ -1,0 +1,81 @@
+/* Custom Scrollbar for Sidebar */
+#sidebar ::-webkit-scrollbar {
+    width: 6px;
+}
+
+#sidebar ::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+#sidebar ::-webkit-scrollbar-thumb {
+    background-color: #475569;
+    border-radius: 20px;
+}
+
+/* Sidebar Collapsed State Handling */
+#sidebar.collapsed {
+    width: 4rem;
+    /* w-16 */
+}
+
+/* Hide text when collapsed */
+#sidebar.collapsed .logo-text,
+#sidebar.collapsed .nav-text {
+    display: none;
+}
+
+/* Center icons when collapsed */
+#sidebar.collapsed .nav-item {
+    justify-content: center;
+    padding-left: 0;
+    padding-right: 0;
+}
+
+#sidebar.collapsed #logo-container {
+    justify-content: center;
+    width: 100%;
+}
+
+/* Show tooltips on hover ONLY when collapsed */
+#sidebar.collapsed .tooltip {
+    display: block;
+    /* Helper class availability */
+}
+
+/* Hide user info text details */
+#sidebar.collapsed .user-details {
+    display: none;
+}
+
+/* Mobile Simulator Frame */
+.mobile-frame {
+    width: 375px;
+    height: 812px;
+    /* iPhone X style dimensions */
+    background: #fff;
+    border: 16px solid #1e293b;
+    border-radius: 36px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    margin: 0 auto;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Simulate Notch/Status Bar Area */
+.mobile-status-bar {
+    height: 30px;
+    background: #1e293b;
+    width: 100%;
+    z-index: 10;
+}
+
+/* Builder Workflow Styling */
+.builder-btn {
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.builder-btn:active {
+    transform: scale(0.98);
+}

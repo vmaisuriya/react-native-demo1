@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Business Process Flow Demo</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        canvas {
+            touch-action: none;
+            /* Prevent scroll on mobile touch */
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 h-screen flex flex-col overflow-hidden">
+
+    <!-- HEADER & TOOLBAR -->
+    <header class="bg-white border-b border-gray-200 shadow-sm z-10 px-6 py-4 flex justify-between items-center">
+        <div>
+            <h1 class="text-xl font-bold text-gray-800">Business Process Flow Demo</h1>
+            <p class="text-sm text-gray-500">Interactive Warehouse Workflow Visualization</p>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <div class="bg-gray-100 rounded-lg p-1 flex gap-1">
+                <button id="btn-zoom-out"
+                    class="p-2 text-gray-600 hover:text-gray-900 hover:bg-white rounded-md transition-all"
+                    title="Zoom Out">
+                    <i class="fa-solid fa-magnifying-glass-minus"></i>
+                </button>
+                <button id="btn-reset"
+                    class="px-3 py-2 text-xs font-bold text-gray-600 hover:text-gray-900 hover:bg-white rounded-md transition-all"
+                    title="Reset View">
+                    100%
+                </button>
+                <button id="btn-zoom-in"
+                    class="p-2 text-gray-600 hover:text-gray-900 hover:bg-white rounded-md transition-all"
+                    title="Zoom In">
+                    <i class="fa-solid fa-magnifying-glass-plus"></i>
+                </button>
+            </div>
+            <div class="h-8 w-px bg-gray-300 mx-2"></div>
+            <button
+                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium text-sm shadow-sm transition-colors">
+                <i class="fa-solid fa-cloud-arrow-down mr-2"></i> Export
+            </button>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT / CANVAS CONTAINER -->
+    <main class="flex-1 p-6 overflow-hidden relative">
+        <div id="canvas-container"
+            class="w-full h-full bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden relative cursor-grab active:cursor-grabbing">
+            <canvas id="flow-canvas"></canvas>
+
+            <!-- Tooltip Popup (Hidden by default) -->
+            <div id="node-tooltip"
+                class="absolute pointer-events-none opacity-0 transition-opacity duration-200 bg-gray-900 text-white text-sm rounded-lg p-3 shadow-xl z-20 max-w-xs transform -translate-x-1/2 -translate-y-full mt-[-10px]">
+                <!-- Content injected by JS -->
+            </div>
+        </div>
+
+        <!-- Legend -->
+        <div
+            class="absolute bottom-10 right-10 bg-white/90 backdrop-blur-sm p-4 rounded-lg shadow-md border border-gray-200 text-xs text-gray-600 space-y-2 pointer-events-none">
+            <div class="flex items-center gap-2">
+                <div class="w-3 h-3 rounded-full bg-green-100 border border-green-500"></div> Start / End
+            </div>
+            <div class="flex items-center gap-2">
+                <div class="w-3 h-3 rounded-full bg-blue-100 border border-blue-500"></div> Process Step
+            </div>
+            <div class="flex items-center gap-2">
+                <div class="w-3 h-3 rounded-full bg-yellow-100 border border-yellow-500"></div> Warning / Review
+            </div>
+            <div class="flex items-center gap-2">
+                <div class="w-3 h-3 rounded-full bg-red-100 border border-red-500"></div> Error / Stop
+            </div>
+        </div>
+    </main>
+
+    <!-- JAVASCRIPT ENGINE -->
+    <script>
+        /**
+         * CONFIGURATION & CONSTANTS
+         */
+        const CONFIG = {
+            nodeWidth: 220,
+            nodeHeight: 70,
+            nodeRadius: 10,
+            gapY: 100, // Vertical gap between nodes
+            colors: {
+                start: { fill: '#dcfce7', stroke: '#16a34a', text: '#14532d' }, // green-100/600/900
+                process: { fill: '#dbeafe', stroke: '#2563eb', text: '#1e3a8a' }, // blue-100/600/900
+                warning: { fill: '#fef9c3', stroke: '#ca8a04', text: '#713f12' }, // yellow-100/600/900
+                error: { fill: '#fee2e2', stroke: '#dc2626', text: '#7f1d1d' }, // red-100/600/900
+                end: { fill: '#dcfce7', stroke: '#16a34a', text: '#14532d' },
+                default: { fill: '#f3f4f6', stroke: '#9ca3af', text: '#374151' }
+            },
+            font: '14px Inter, sans-serif',
+            fontBold: 'bold 14px Inter, sans-serif'
+        };
+
+        /**
+         * DATA DEFINITION
+         * Simple array structure. Engine handles layout.
+         */
+        const processFlow = [
+            { id: "start", label: "Start", type: "start", details: "Process Initiated" },
+            { id: "order_created", label: "Order Created", type: "process", details: "Customer places order via API" },
+            { id: "builder", label: "Builder Picks Order", type: "process", details: "Warehouse staff gathers items" },
+            { id: "groover", label: "Groover Reviews Order", type: "warning", details: "Quality Control / Verification" },
+            { id: "packer", label: "Packer Packs Order", type: "process", details: "Box selection and packing" },
+            { id: "shipping", label: "Shipping Complete", type: "process", details: "Label generated and handed to carrier" },
+            { id: "end", label: "End", type: "end", details: "Workflow Complete" }
+        ];
+
+        /**
+         * STATE MANAGEMENT
+         */
+        const state = {
+            canvas: null,
+            ctx: null,
+            width: 0,
+            height: 0,
+            scale: 1, // Zoom level
+            offsetX: 0, // Pan X
+            offsetY: 0, // Pan Y
+            isPanning: false,        // Track Canvas Pan
+            draggedNode: null,       // Track Node Drag
+            dragStartX: 0,           // Offset within node when dragging
+            dragStartY: 0,
+            lastX: 0, // Interaction last pos
+            lastY: 0,
+            nodes: [], // Calculated layout nodes
+            hoveredNode: null
+        };
+
+        /**
+         * INITIALIZATION
+         */
+        function init() {
+            state.canvas = document.getElementById('flow-canvas');
+            state.ctx = state.canvas.getContext('2d');
+            const container = document.getElementById('canvas-container');
+
+            // Resize Observer to handle window resizing
+            const resizeObserver = new ResizeObserver(() => resize());
+            resizeObserver.observe(container);
+
+            // Initial Layout Calculation
+            calculateLayout();
+
+            // Event Listeners
+            setupEvents();
+
+            // Initial Center logic (will run after resize)
+            setTimeout(centerView, 50);
+
+            // Render Loop
+            requestAnimationFrame(draw);
+        }
+
+        /**
+         * LAYOUT ENGINE
+         * Calculates positions based on simple vertical stack for this demo.
+         */
+        function calculateLayout() {
+            let currentY = 50; // Start margin
+            const startX = 0; // Relative to center, handled during draw
+
+            state.nodes = processFlow.map((step, index) => {
+                const node = {
+                    ...step,
+                    x: startX - (CONFIG.nodeWidth / 2), // Centered horizontally
+                    y: currentY,
+                    w: CONFIG.nodeWidth,
+                    h: CONFIG.nodeHeight
+                };
+                currentY += CONFIG.nodeHeight + CONFIG.gapY;
+                return node;
+            });
+        }
+
+        function resize() {
+            const container = document.getElementById('canvas-container');
+            state.width = container.clientWidth;
+            state.height = container.clientHeight;
+
+            // Set actual canvas size to match display size (for high DPI support, could execute scale, but keeping simple)
+            state.canvas.width = state.width;
+            state.canvas.height = state.height;
+
+            draw();
+        }
+
+        function centerView() {
+            // Calculate total content height
+            const contentHeight = (state.nodes.length * CONFIG.nodeHeight) + ((state.nodes.length - 1) * CONFIG.gapY) + 100;
+
+            state.offsetX = state.width / 2;
+            state.offsetY = 50; // Top padding
+            state.scale = 1;
+            draw();
+        }
+
+        /**
+         * RENDERING ENGINE
+         */
+        function draw() {
+            const { ctx, width, height, scale, offsetX, offsetY, nodes, hoveredNode, draggedNode } = state;
+
+            // Clear Canvas
+            ctx.clearRect(0, 0, width, height);
+
+            // Save context for transform
+            ctx.save();
+            ctx.translate(offsetX, offsetY);
+            ctx.scale(scale, scale);
+
+            // Draw Connections First (so they are behind nodes)
+            drawConnections(ctx, nodes);
+
+            // Draw Nodes
+            nodes.forEach(node => drawNode(ctx, node, node === hoveredNode || node === draggedNode));
+
+            // Restore context
+            ctx.restore();
+        }
+
+        function drawConnections(ctx, nodes) {
+            ctx.strokeStyle = '#cbd5e1'; // slate-300
+            ctx.lineWidth = 2;
+
+            for (let i = 0; i < nodes.length - 1; i++) {
+                const startNode = nodes[i];
+                const endNode = nodes[i + 1];
+
+                const startX = startNode.x + (startNode.w / 2);
+                const startY = startNode.y + startNode.h;
+                const endX = endNode.x + (endNode.w / 2);
+                const endY = endNode.y;
+
+                // Draw Bezier Curve
+                ctx.beginPath();
+                ctx.moveTo(startX, startY);
+                ctx.bezierCurveTo(
+                    startX, startY + 50, // Control 1: Down
+                    endX, endY - 50,     // Control 2: Up
+                    endX, endY
+                );
+                ctx.stroke();
+
+                // Draw Arrowhead
+                drawArrowhead(ctx, endX, endY);
+            }
+        }
+
+        function drawArrowhead(ctx, x, y) {
+            const size = 6;
+            ctx.fillStyle = '#cbd5e1';
+            ctx.beginPath();
+            ctx.moveTo(x - size, y - size);
+            ctx.lineTo(x, y);
+            ctx.lineTo(x + size, y - size);
+            ctx.stroke();
+        }
+
+        function drawNode(ctx, node, isHovered) {
+            const style = CONFIG.colors[node.type] || CONFIG.colors.default;
+
+            // Shadows
+            if (isHovered) {
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.2)';
+                ctx.shadowBlur = 15; // Increased drag/hover shadow
+                ctx.shadowOffsetY = 6;
+            } else {
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.05)';
+                ctx.shadowBlur = 4;
+                ctx.shadowOffsetY = 2;
+            }
+
+            // Box Body
+            ctx.fillStyle = isHovered ? '#ffffff' : style.fill; // White on hover for contrast
+            ctx.strokeStyle = style.stroke;
+            ctx.lineWidth = isHovered ? 2 : 1;
+
+            roundRect(ctx, node.x, node.y, node.w, node.h, CONFIG.nodeRadius);
+            ctx.fill();
+            ctx.stroke();
+
+            // Reset Shadow
+            ctx.shadowColor = 'transparent';
+            ctx.shadowBlur = 0;
+            ctx.shadowOffsetY = 0;
+
+            // Text
+            ctx.fillStyle = style.text;
+            ctx.font = isHovered ? CONFIG.fontBold : CONFIG.font;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            const cx = node.x + (node.w / 2);
+            const cy = node.y + (node.h / 2);
+
+            ctx.fillText(node.label, cx, cy);
+        }
+
+        /**
+         * UTILS: Rounded Rectangle Path
+         */
+        function roundRect(ctx, x, y, w, h, r) {
+            ctx.beginPath();
+            ctx.moveTo(x + r, y);
+            ctx.lineTo(x + w - r, y);
+            ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+            ctx.lineTo(x + w, y + h - r);
+            ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+            ctx.lineTo(x + r, y + h);
+            ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+            ctx.lineTo(x, y + r);
+            ctx.quadraticCurveTo(x, y, x + r, y);
+            ctx.closePath();
+        }
+
+        /**
+         * EVENT HANDLERS
+         */
+        function setupEvents() {
+            const canvas = state.canvas;
+
+            // Helper: Transform mouse event to Canvas Space
+            function getMousePos(e) {
+                const rect = canvas.getBoundingClientRect();
+                return {
+                    x: e.clientX,
+                    y: e.clientY,
+                    cvsX: (e.clientX - rect.left - state.offsetX) / state.scale,
+                    cvsY: (e.clientY - rect.top - state.offsetY) / state.scale
+                };
+            }
+
+            // Helper: Hit Test
+            function hitTest(x, y) {
+                // Reverse iterate to hit check top-most elements first
+                for (let i = state.nodes.length - 1; i >= 0; i--) {
+                    const node = state.nodes[i];
+                    if (x >= node.x && x <= node.x + node.w &&
+                        y >= node.y && y <= node.y + node.h) {
+                        return node;
+                    }
+                }
+                return null;
+            }
+
+            // Mouse Down (Start Pan OR Drag Node)
+            canvas.addEventListener('mousedown', (e) => {
+                const pos = getMousePos(e);
+                const node = hitTest(pos.cvsX, pos.cvsY);
+
+                if (node) {
+                    // Start Node Drag
+                    state.draggedNode = node;
+                    state.dragStartX = pos.cvsX - node.x;
+                    state.dragStartY = pos.cvsY - node.y;
+                    canvas.style.cursor = 'grabbing';
+                    hideTooltip();
+                } else {
+                    // Start Canvas Pan
+                    state.isPanning = true;
+                    state.lastX = e.clientX;
+                    state.lastY = e.clientY;
+                    canvas.parentElement.style.cursor = 'grabbing';
+                }
+            });
+
+            // Mouse Move (Pan, Drag Node, Hover)
+            canvas.addEventListener('mousemove', (e) => {
+                const pos = getMousePos(e);
+
+                if (state.draggedNode) {
+                    // Drag Node
+                    const node = state.draggedNode;
+                    node.x = pos.cvsX - state.dragStartX;
+                    node.y = pos.cvsY - state.dragStartY;
+                    requestAnimationFrame(draw);
+                }
+                else if (state.isPanning) {
+                    // Pan Canvas
+                    const dx = e.clientX - state.lastX;
+                    const dy = e.clientY - state.lastY;
+                    state.offsetX += dx;
+                    state.offsetY += dy;
+                    state.lastX = e.clientX;
+                    state.lastY = e.clientY;
+                    requestAnimationFrame(draw);
+                }
+                else {
+                    // Hover Effect
+                    const node = hitTest(pos.cvsX, pos.cvsY);
+
+                    if (state.hoveredNode !== node) {
+                        state.hoveredNode = node;
+                        canvas.style.cursor = node ? 'grab' : 'default';
+
+                        if (node) showTooltip(node, e.clientX, e.clientY);
+                        else hideTooltip();
+
+                        requestAnimationFrame(draw);
+                    } else if (node) {
+                        // Update tooltip pos
+                        showTooltip(node, e.clientX, e.clientY);
+                    }
+                }
+            });
+
+            // Mouse Up (End Pan/Drag)
+            window.addEventListener('mouseup', (e) => {
+                if (state.draggedNode) {
+                    state.draggedNode = null;
+                    canvas.style.cursor = 'grab'; // Revert to hover cursor if still over node
+                }
+                if (state.isPanning) {
+                    state.isPanning = false;
+                    canvas.parentElement.style.cursor = 'grab';
+                }
+            });
+
+            // Wheel (Zoom)
+            canvas.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                const zoomIntensity = 0.1;
+                const direction = e.deltaY > 0 ? -1 : 1;
+                const factor = 1 + (direction * zoomIntensity);
+
+                let newScale = state.scale * factor;
+                newScale = Math.min(Math.max(0.5, newScale), 3); // Clamp zoom
+
+                state.scale = newScale;
+                updateZoomText();
+                requestAnimationFrame(draw);
+            }, { passive: false });
+
+            // Button Controls
+            document.getElementById('btn-zoom-in').addEventListener('click', () => {
+                state.scale = Math.min(state.scale + 0.2, 3);
+                updateZoomText();
+                draw();
+            });
+            document.getElementById('btn-zoom-out').addEventListener('click', () => {
+                state.scale = Math.max(state.scale - 0.2, 0.5);
+                updateZoomText();
+                draw();
+            });
+            document.getElementById('btn-reset').addEventListener('click', () => {
+                centerView();
+                updateZoomText();
+            });
+        }
+
+        function handleClick(node) {
+            // Placeholder for click action or sidebar detail open
+            console.log('Clicked Node:', node);
+        }
+
+        /**
+         * UI HELPERS
+         */
+        function updateZoomText() {
+            document.getElementById('btn-reset').textContent = `${Math.round(state.scale * 100)}%`;
+        }
+
+        function showTooltip(node, mouseX, mouseY) {
+            const tooltip = document.getElementById('node-tooltip');
+            tooltip.style.opacity = '1';
+            tooltip.style.left = `${mouseX}px`;
+            tooltip.style.top = `${mouseY - 10}px`;
+
+            tooltip.innerHTML = `
+                <div class="font-bold text-blue-200 uppercase text-xs mb-1">${node.type}</div>
+                <div class="font-bold text-lg mb-1">${node.label}</div>
+                <div class="text-gray-300 text-xs">${node.details}</div>
+            `;
+        }
+
+        function hideTooltip() {
+            const tooltip = document.getElementById('node-tooltip');
+            tooltip.style.opacity = '0';
+        }
+
+        // Run
+        init();
+
+    </script>
+</body>
+
+</html>

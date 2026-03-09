@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Builder TV Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: #f8fafc;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 20px 40px -10px rgba(15, 23, 42, 0.05);
+            border-radius: 2rem;
+        }
+
+        .metric-value {
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .bar-transition {
+            transition: height 1s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .blue-gradient-text {
+            background: linear-gradient(135deg, #0ea5e9, #2563eb);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .animated-bg {
+            background: linear-gradient(-45deg, #eff6ff, #f8fafc, #f0fdf4, #f8fafc);
+            background-size: 400% 400%;
+            animation: gradient-flow 15s ease infinite;
+        }
+
+        @keyframes gradient-flow {
+            0% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        /* Micro-animations */
+        .hover-lift {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .hover-lift:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.1);
+        }
+
+        .pulse-soft {
+            animation: pulse-op 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes pulse-op {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: .7;
+            }
+        }
+    </style>
+</head>
+
+<body class="text-slate-800 h-screen overflow-hidden flex flex-col select-none animated-bg">
+
+    <!-- HEADER -->
+    <header
+        class="glass-card mx-8 mt-6 px-10 py-5 flex justify-between items-center shrink-0 z-10 border-b-4 border-blue-500">
+        <div class="flex items-center gap-6">
+            <div
+                class="w-20 h-20 bg-gradient-to-br from-blue-400 to-blue-600 rounded-3xl flex items-center justify-center text-white text-4xl shadow-lg shadow-blue-500/30">
+                <i class="fa-solid fa-layer-group"></i>
+            </div>
+            <div>
+                <h1 class="text-5xl font-black tracking-tight text-slate-900 uppercase">Builder Zone</h1>
+                <div class="text-blue-500 font-semibold tracking-widest uppercase text-sm mt-1">Live Operations Hub
+                </div>
+            </div>
+        </div>
+        <div class="flex items-center gap-10">
+            <div class="flex flex-col items-end">
+                <div class="text-xl font-bold text-slate-400" id="last-updated">Updating...</div>
+                <div class="text-lg font-semibold text-blue-400 flex items-center gap-2">
+                    <div class="w-2 h-2 rounded-full bg-blue-500 pulse-soft"></div>
+                    <span id="refresh-timer">Flow: 30s</span>
+                </div>
+            </div>
+            <div class="bg-white/80 border border-slate-100 rounded-3xl px-8 py-4 shadow-sm backdrop-blur-md">
+                <span id="clock" class="text-5xl font-mono font-black blue-gradient-text tracking-wider">--:--:--</span>
+            </div>
+            <button onclick="document.documentElement.requestFullscreen()"
+                class="w-16 h-16 bg-slate-800 text-white rounded-2xl flex items-center justify-center text-2xl hover:bg-blue-600 hover:scale-105 transition-all shadow-lg active:scale-95">
+                <i class="fa-solid fa-expand"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- CONTENT -->
+    <main class="flex-1 p-8 grid grid-cols-12 gap-8 overflow-hidden h-full">
+
+        <!-- LEFT COL: METRICS (8 cols) -->
+        <div class="col-span-8 flex flex-col gap-8 h-full">
+
+            <!-- Top Row (3 metrics) -->
+            <div class="grid grid-cols-3 gap-8 flex-1">
+                <!-- Orders Built Today -->
+                <div
+                    class="glass-card p-8 flex flex-col justify-between relative overflow-hidden hover-lift group border-l-8 border-blue-500">
+                    <div
+                        class="absolute -right-10 -top-10 w-40 h-40 bg-blue-100/50 rounded-full blur-2xl group-hover:bg-blue-200/50 transition-colors">
+                    </div>
+                    <h3
+                        class="text-2xl font-bold text-slate-500 uppercase tracking-wider relative z-10 flex items-center justify-between">
+                        Orders Built
+                        <i class="fa-solid fa-box-open text-blue-200 text-3xl"></i>
+                    </h3>
+                    <div class="flex items-baseline gap-2 mt-4 relative z-10">
+                        <div class="text-[6rem] lg:text-[7.5rem] leading-none font-black text-slate-800 metric-value"
+                            id="val-orders-built">0</div>
+                    </div>
+                </div>
+                <!-- New Batches -->
+                <div class="glass-card p-8 flex flex-col justify-between relative overflow-hidden hover-lift group">
+                    <div
+                        class="absolute -right-10 -top-10 w-40 h-40 bg-indigo-100/50 rounded-full blur-2xl group-hover:bg-indigo-200/50 transition-colors">
+                    </div>
+                    <h3
+                        class="text-2xl font-bold text-slate-500 uppercase tracking-wider relative z-10 flex items-center justify-between">
+                        New Batches
+                        <i class="fa-solid fa-layer-group text-indigo-200 text-3xl"></i>
+                    </h3>
+                    <div class="text-[6rem] lg:text-[7.5rem] leading-none font-black text-indigo-600 mt-4 metric-value relative z-10"
+                        id="val-new-batches">0</div>
+                </div>
+                <!-- Total Items -->
+                <div class="glass-card p-8 flex flex-col justify-between relative overflow-hidden hover-lift group">
+                    <div
+                        class="absolute -right-10 -top-10 w-40 h-40 bg-slate-200/50 rounded-full blur-2xl group-hover:bg-slate-300/50 transition-colors">
+                    </div>
+                    <h3
+                        class="text-2xl font-bold text-slate-500 uppercase tracking-wider relative z-10 flex items-center justify-between">
+                        Total Items
+                        <i class="fa-solid fa-cubes text-slate-200 text-3xl"></i>
+                    </h3>
+                    <div class="text-[6rem] lg:text-[7.5rem] leading-none font-black text-slate-800 mt-4 metric-value relative z-10"
+                        id="val-total-items">0</div>
+                </div>
+            </div>
+
+            <!-- Middle Row (2 Metrics + Intensity) -->
+            <div class="grid grid-cols-3 gap-8 flex-1">
+                <!-- Total Orders (Builder Stage) -->
+                <div class="glass-card p-8 flex flex-col justify-between relative overflow-hidden hover-lift group">
+                    <div
+                        class="absolute -right-10 -top-10 w-40 h-40 bg-sky-100/50 rounded-full blur-2xl group-hover:bg-sky-200/50 transition-colors">
+                    </div>
+                    <h3
+                        class="text-2xl font-bold text-slate-500 uppercase tracking-wider relative z-10 flex items-center justify-between">
+                        Orders in Stage
+                        <i class="fa-solid fa-list-check text-sky-200 text-3xl"></i>
+                    </h3>
+                    <div class="text-[6rem] lg:text-[7.5rem] leading-none font-black text-sky-600 mt-4 metric-value relative z-10"
+                        id="val-orders-stage">0</div>
+                </div>
+                <!-- Zone Efficiency -->
+                <div class="glass-card p-8 flex flex-col justify-between relative overflow-hidden hover-lift group">
+                    <div
+                        class="absolute -right-10 -top-10 w-40 h-40 bg-emerald-100/50 rounded-full blur-2xl group-hover:bg-emerald-200/50 transition-colors">
+                    </div>
+                    <h3
+                        class="text-2xl font-bold text-slate-500 uppercase tracking-wider relative z-10 flex items-center justify-between">
+                        Zone Efficiency
+                        <i class="fa-solid fa-chart-pie text-emerald-200 text-3xl"></i>
+                    </h3>
+                    <div class="flex items-baseline gap-2 mt-4 relative z-10">
+                        <div class="text-[6rem] lg:text-[7.5rem] leading-none font-black metric-value text-emerald-500"
+                            id="val-efficiency">0</div>
+                        <div class="text-4xl font-bold text-slate-400">%</div>
+                    </div>
+                </div>
+                <!-- Intensity Indicator -->
+                <div class="glass-card flex flex-col items-center justify-center text-center transition-all duration-1000 border-l-8 border-transparent relative overflow-hidden"
+                    id="intensity-card">
+                    <div class="absolute inset-0 opacity-20 transition-all duration-1000" id="intensity-glow"></div>
+                    <h3 class="text-xl font-bold text-slate-500 uppercase tracking-widest mb-4 relative z-10">
+                        Operational Intensity</h3>
+                    <div class="text-5xl lg:text-6xl font-black uppercase tracking-tight relative z-10"
+                        id="intensity-text">NORMAL</div>
+                </div>
+            </div>
+
+            <!-- Bottom Row (Issues) -->
+            <div
+                class="glass-card h-48 flex items-center px-10 justify-between shrink-0 border-l-8 border-rose-500 overflow-hidden relative">
+                <div
+                    class="absolute -left-20 top-1/2 -translate-y-1/2 w-64 h-64 bg-rose-50 rounded-full blur-3xl opacity-50 z-0">
+                </div>
+                <h3 class="text-3xl font-black text-slate-700 uppercase tracking-wider relative z-10 flex flex-col">
+                    Issues Reported
+                    <span class="text-rose-500 text-sm tracking-widest mt-1">TODAY'S EXCEPTIONS</span>
+                </h3>
+                <div class="flex gap-16 relative z-10" id="issues-container">
+                    <!-- populated by js -->
+                </div>
+            </div>
+
+        </div>
+
+        <!-- RIGHT COL: LEADERBOARD (4 cols) -->
+        <div class="col-span-4 glass-card p-8 flex flex-col h-full relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-64 h-64 bg-blue-50/50 rounded-full blur-3xl -z-10"></div>
+
+            <div class="flex items-center justify-between mb-8 pb-4 border-b border-slate-200">
+                <div class="flex items-center gap-4">
+                    <div
+                        class="w-14 h-14 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center text-2xl shadow-sm">
+                        <i class="fa-solid fa-trophy"></i>
+                    </div>
+                    <h2 class="text-3xl font-black text-slate-800 uppercase tracking-wider">Top Builders</h2>
+                </div>
+                <div
+                    class="text-sm font-bold text-slate-400 uppercase tracking-widest bg-slate-100 px-4 py-2 rounded-full">
+                    Live Stats</div>
+            </div>
+
+            <div class="flex-1 flex flex-col gap-4" id="leaderboard-container">
+                <!-- populated by js -->
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // --- CONFIGURATION ---
+        const REFRESH_INTERVAL_SEC = 30;
+        let countdown = REFRESH_INTERVAL_SEC;
+
+        // --- STATE ---
+        let state = {
+            metrics: {
+                builtToday: 3120,
+                newBatches: 12,
+                totalItems: 14500,
+                ordersStage: 450,
+                efficiency: 94,
+                issues: { Missing: 4, Damaged: 2, System: 0 }
+            },
+            leaderboard: [
+                { id: 1, name: 'Sarah Jenkins', photo: 'https://i.pravatar.cc/150?img=11', total: 482, history: [30, 45, 60, 55, 40] },
+                { id: 2, name: 'Mike Torres', photo: 'https://i.pravatar.cc/150?img=12', total: 465, history: [40, 50, 45, 60, 35] },
+                { id: 3, name: 'Elena Rossi', photo: 'https://i.pravatar.cc/150?img=9', total: 430, history: [25, 40, 55, 50, 45] },
+                { id: 4, name: 'David Kim', photo: 'https://i.pravatar.cc/150?img=15', total: 410, history: [35, 30, 45, 55, 50] },
+                { id: 5, name: 'Lisa Ray', photo: 'https://i.pravatar.cc/150?img=5', total: 395, history: [20, 35, 40, 45, 60] }
+            ],
+            intensity: 'normal' // low, normal, high, peak
+        };
+
+        // --- RENDER FUNCTIONS ---
+        function renderMetrics() {
+            animateValue('val-orders-built', state.metrics.builtToday);
+            animateValue('val-new-batches', state.metrics.newBatches);
+            animateValue('val-total-items', state.metrics.totalItems);
+            animateValue('val-orders-stage', state.metrics.ordersStage);
+            animateValue('val-efficiency', state.metrics.efficiency);
+
+            // Efficiency Color
+            const effEl = document.getElementById('val-efficiency');
+            effEl.className = `text-[6rem] lg:text-[7.5rem] leading-none font-black metric-value ${state.metrics.efficiency >= 95 ? 'text-emerald-500' : state.metrics.efficiency >= 80 ? 'text-amber-500' : 'text-rose-500'}`;
+
+            // Issues
+            const issuesContainer = document.getElementById('issues-container');
+            issuesContainer.innerHTML = '';
+            for (const [category, count] of Object.entries(state.metrics.issues)) {
+                issuesContainer.innerHTML += `
+                    <div class="flex flex-col items-center group">
+                        <div class="text-6xl font-black transition-colors ${count > 0 ? 'text-rose-500' : 'text-slate-200'}">${count}</div>
+                        <div class="text-lg font-bold ${count > 0 ? 'text-rose-400' : 'text-slate-400'} uppercase mt-1 tracking-wider">${category}</div>
+                    </div>
+                `;
+            }
+
+            // Intensity
+            const card = document.getElementById('intensity-card');
+            const text = document.getElementById('intensity-text');
+            const glow = document.getElementById('intensity-glow');
+
+            let borderColor = 'border-transparent', color = 'text-slate-700', glowColor = 'bg-transparent';
+            if (state.intensity === 'low') { borderColor = 'border-blue-400'; color = 'text-blue-600'; glowColor = 'bg-blue-300'; }
+            else if (state.intensity === 'normal') { borderColor = 'border-emerald-400'; color = 'text-emerald-600'; glowColor = 'bg-emerald-300'; }
+            else if (state.intensity === 'high') { borderColor = 'border-amber-400'; color = 'text-amber-600'; glowColor = 'bg-amber-300'; }
+            else if (state.intensity === 'peak') { borderColor = 'border-rose-500'; color = 'text-rose-600'; glowColor = 'bg-rose-500'; }
+
+            if (state.intensity === 'peak') {
+                text.classList.add('pulse-soft');
+            } else {
+                text.classList.remove('pulse-soft');
+            }
+
+            card.className = `glass-card flex flex-col items-center justify-center text-center transition-all duration-1000 border-l-8 ${borderColor} relative overflow-hidden group`;
+            text.className = `text-5xl lg:text-6xl font-black uppercase tracking-tight relative z-10 ${color}`;
+            text.textContent = state.intensity;
+            glow.className = `absolute inset-0 opacity-20 blur-2xl transition-all duration-1000 ${glowColor} group-hover:opacity-30`;
+        }
+
+        function renderLeaderboard() {
+            const container = document.getElementById('leaderboard-container');
+
+            // Sort leaderboard
+            state.leaderboard.sort((a, b) => b.total - a.total);
+
+            let html = '';
+            state.leaderboard.slice(0, 5).forEach((user, index) => {
+
+                // Medals for top 3
+                let rankBadge = '';
+                if (index === 0) rankBadge = `<div class="absolute -right-2 -bottom-2 w-8 h-8 rounded-full bg-amber-400 flex items-center justify-center text-white shadow-lg border-2 border-white z-10 text-sm"><i class="fa-solid fa-crown"></i></div>`;
+                else if (index === 1) rankBadge = `<div class="absolute -right-2 -bottom-2 w-8 h-8 rounded-full bg-slate-300 flex items-center justify-center text-slate-700 shadow-lg border-2 border-white z-10 text-sm font-bold">2</div>`;
+                else if (index === 2) rankBadge = `<div class="absolute -right-2 -bottom-2 w-8 h-8 rounded-full bg-amber-700 flex items-center justify-center text-white shadow-lg border-2 border-white z-10 text-sm font-bold">3</div>`;
+                else rankBadge = `<div class="absolute -right-1 -bottom-1 w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 shadow-sm border border-white z-10 text-xs font-bold">${index + 1}</div>`;
+
+                // Find max history for scaling bars
+                const maxVal = Math.max(...user.history, 10);
+
+                let barsHtml = user.history.map((val, i) => {
+                    const heightPct = Math.min((val / maxVal) * 100, 100);
+                    const isLast = i === user.history.length - 1;
+                    const bg = isLast ? 'bg-blue-600' : 'bg-blue-300';
+                    return `<div class="w-4 ${bg} rounded-t-sm bar-transition opacity-90 mx-[1px]" style="height: ${Math.max(10, heightPct)}%"></div>`;
+                }).join('');
+
+                html += `
+                    <div class="flex items-center gap-5 bg-white/60 hover:bg-white rounded-2xl p-4 border border-slate-100 transition-colors shadow-sm">
+                        <!-- Avatar -->
+                        <div class="w-16 h-16 rounded-[1rem] bg-blue-50 flex-shrink-0 relative shadow-inner">
+                            <img src="${user.photo}" class="w-full h-full object-cover rounded-[1rem]">
+                            ${rankBadge}
+                        </div>
+                        
+                        <!-- Name & Score -->
+                        <div class="flex-1 min-w-0">
+                            <div class="text-xl font-bold text-slate-800 truncate">${user.name}</div>
+                            <div class="text-2xl font-black text-blue-600 leading-none mt-1">${user.total} <span class="text-xs text-slate-400 uppercase font-bold tracking-wider">Builds</span></div>
+                        </div>
+
+                        <!-- Mini Chart -->
+                        <div class="flex items-end h-12 w-32 shrink-0 border-b-2 border-slate-200 pb-[1px]">
+                            ${barsHtml}
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function updateTimestamp() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('en-US', { hour12: true, hour: 'numeric', minute: '2-digit' });
+            document.getElementById('last-updated').textContent = 'Last Sync: ' + timeString;
+        }
+
+        // --- ANIMATION UTILS ---
+        function animateValue(id, end) {
+            const obj = document.getElementById(id);
+            if (!obj) return;
+            const start = parseInt(obj.textContent.replace(/,/g, '')) || 0;
+            if (start === end) return;
+
+            const duration = 1500;
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                // Easing out
+                const easeProgress = 1 - Math.pow(1 - progress, 3);
+                const current = Math.floor(easeProgress * (end - start) + start);
+                obj.textContent = current.toLocaleString();
+                if (progress < 1) {
+                    window.requestAnimationFrame(step);
+                } else {
+                    obj.textContent = end.toLocaleString();
+                }
+            };
+            window.requestAnimationFrame(step);
+        }
+
+        // --- SIMULATION LOGIC ---
+        function simulateData() {
+            // Metrics flux
+            state.metrics.builtToday += Math.floor(Math.random() * 5) + 1;
+            state.metrics.newBatches = Math.max(0, state.metrics.newBatches + Math.floor(Math.random() * 5) - 2);
+            state.metrics.totalItems += Math.floor(Math.random() * 20) + 5;
+            state.metrics.ordersStage = Math.max(10, state.metrics.ordersStage + Math.floor(Math.random() * 11) - 5);
+            state.metrics.efficiency = Math.max(75, Math.min(100, state.metrics.efficiency + Math.floor(Math.random() * 5) - 2));
+
+            // Random issue occasionally
+            if (Math.random() > 0.85) {
+                const keys = Object.keys(state.metrics.issues);
+                const randomKey = keys[Math.floor(Math.random() * keys.length)];
+                state.metrics.issues[randomKey]++;
+            }
+
+            // Intensity logic
+            const workload = state.metrics.newBatches + state.metrics.ordersStage;
+            if (workload > 600) state.intensity = 'peak';
+            else if (workload > 500) state.intensity = 'high';
+            else if (workload < 300) state.intensity = 'low';
+            else state.intensity = 'normal';
+
+            // Leaderboard flux
+            state.leaderboard.forEach(user => {
+                const newBuilds = Math.floor(Math.random() * 4);
+                user.total += newBuilds;
+                // update history (shift left)
+                user.history.shift();
+                user.history.push(Math.floor(Math.random() * 20) + 30);
+            });
+
+            renderMetrics();
+            renderLeaderboard();
+            updateTimestamp();
+        }
+
+        // --- CLOCK & TIMER ---
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById('clock').textContent = now.toLocaleTimeString('en-US', { hour12: false });
+
+            countdown--;
+            if (countdown <= 0) {
+                countdown = REFRESH_INTERVAL_SEC;
+                simulateData();
+            }
+            document.getElementById('refresh-timer').textContent = `Sync in ${countdown}s`;
+        }, 1000);
+
+        // --- INITIALIZE ---
+        renderMetrics();
+        renderLeaderboard();
+        updateTimestamp();
+
+    </script>
+</body>
+
+</html>

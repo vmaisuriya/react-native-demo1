@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Operations TV Dashboard 2</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Animations */
+        @keyframes pulse-live {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+
+            50% {
+                transform: scale(1.2);
+                opacity: 0.7;
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        @keyframes scroll-text {
+            0% {
+                transform: translateX(100%);
+            }
+
+            100% {
+                transform: translateX(-100%);
+            }
+        }
+
+        @keyframes flow-active {
+            0% {
+                background-position: 0 0;
+            }
+
+            100% {
+                background-position: 40px 0;
+            }
+        }
+
+        .animate-pulse-live {
+            animation: pulse-live 2s infinite ease-in-out;
+        }
+
+        .ticker-content {
+            animation: scroll-text 25s linear infinite;
+        }
+
+        .flow-bg {
+            background: linear-gradient(90deg, #e5e7eb 50%, #f3f4f6 50%);
+            background-size: 40px 100%;
+            animation: flow-active 1s linear infinite;
+        }
+
+        /* View Transition */
+        .dashboard-view {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.8s ease-in-out;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            padding: 2rem;
+        }
+
+        .dashboard-view.active {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+
+        /* Urgent Alert */
+        .urgent-flash {
+            animation: flash-urgent 1s infinite;
+        }
+
+        @keyframes flash-urgent {
+
+            0%,
+            100% {
+                background-color: white;
+            }
+
+            50% {
+                background-color: #fef08a;
+            }
+
+            /* yellow-200 */
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 text-gray-900 h-screen overflow-hidden flex flex-col">
+
+    <!-- HEADER -->
+    <header
+        class="bg-white px-8 py-6 shadow-sm flex justify-between items-center shrink-0 z-20 border-b border-gray-200">
+        <div class="flex items-center gap-6">
+            <div
+                class="w-16 h-16 bg-blue-900 rounded-2xl flex items-center justify-center text-white text-3xl shadow-lg">
+                <i class="fa-solid fa-industry"></i>
+            </div>
+            <div>
+                <h1 class="text-4xl font-black tracking-tight text-gray-900 uppercase">Warehouse Operations Status</h1>
+                <div class="text-gray-500 font-bold uppercase tracking-widest text-sm mt-1">Live Operational View</div>
+            </div>
+        </div>
+        <div class="flex items-center gap-6">
+            <div class="bg-gray-50 border-2 border-gray-200 rounded-2xl px-8 py-3 shadow-inner">
+                <span id="clock" class="text-5xl font-mono font-bold text-gray-700 tracking-widest">--:--:--</span>
+            </div>
+            <button onclick="toggleFullscreen()"
+                class="bg-gray-200 hover:bg-gray-300 text-gray-600 p-4 rounded-xl transition-all shadow-sm">
+                <i class="fa-solid fa-expand text-xl"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- CONTENT AREA -->
+    <main class="flex-1 relative overflow-hidden">
+
+        <!-- VIEW 1: ROLE ACTIVITY -->
+        <div id="view-1" class="dashboard-view active">
+            <div class="grid grid-cols-3 gap-8 h-full">
+                <!-- Builder Card -->
+                <div id="card-builder"
+                    class="bg-white rounded-[3rem] shadow-xl border border-gray-200 flex flex-col items-center justify-center relative overflow-hidden transition-all duration-300">
+                    <div class="absolute inset-0 bg-blue-50/50"></div>
+                    <h2 class="text-5xl font-black text-gray-800 uppercase tracking-tight z-10 mb-8">Builder</h2>
+                    <div class="text-[9rem] font-black text-blue-600 leading-none z-10 mb-4 transition-all duration-300"
+                        id="val-builder">--</div>
+                    <div class="z-10 text-gray-400 font-bold uppercase tracking-widest text-xl mb-8">Currently Working
+                    </div>
+                    <div
+                        class="z-10 flex items-center gap-3 bg-white px-6 py-3 rounded-full shadow-sm border border-gray-100">
+                        <div class="w-4 h-4 rounded-full bg-green-500 animate-pulse-live"></div>
+                        <span class="text-green-600 font-bold uppercase tracking-wider">Live</span>
+                    </div>
+                </div>
+
+                <!-- Groover Card -->
+                <div id="card-groover"
+                    class="bg-white rounded-[3rem] shadow-xl border border-gray-200 flex flex-col items-center justify-center relative overflow-hidden transition-all duration-300">
+                    <div class="absolute inset-0 bg-yellow-50/50"></div>
+                    <h2 class="text-5xl font-black text-gray-800 uppercase tracking-tight z-10 mb-8">Groover</h2>
+                    <div class="text-[9rem] font-black text-yellow-600 leading-none z-10 mb-4 transition-all duration-300"
+                        id="val-groover">--</div>
+                    <div class="z-10 text-gray-400 font-bold uppercase tracking-widest text-xl mb-8">Currently Working
+                    </div>
+                    <div
+                        class="z-10 flex items-center gap-3 bg-white px-6 py-3 rounded-full shadow-sm border border-gray-100">
+                        <div class="w-4 h-4 rounded-full bg-green-500 animate-pulse-live"></div>
+                        <span class="text-green-600 font-bold uppercase tracking-wider">Live</span>
+                    </div>
+                </div>
+
+                <!-- Packer Card -->
+                <div id="card-packer"
+                    class="bg-white rounded-[3rem] shadow-xl border border-gray-200 flex flex-col items-center justify-center relative overflow-hidden transition-all duration-300">
+                    <div class="absolute inset-0 bg-purple-50/50"></div>
+                    <h2 class="text-5xl font-black text-gray-800 uppercase tracking-tight z-10 mb-8">Packer</h2>
+                    <div class="text-[9rem] font-black text-purple-600 leading-none z-10 mb-4 transition-all duration-300"
+                        id="val-packer">--</div>
+                    <div class="z-10 text-gray-400 font-bold uppercase tracking-widest text-xl mb-8">Currently Working
+                    </div>
+                    <div
+                        class="z-10 flex items-center gap-3 bg-white px-6 py-3 rounded-full shadow-sm border border-gray-100">
+                        <div class="w-4 h-4 rounded-full bg-green-500 animate-pulse-live"></div>
+                        <span class="text-green-600 font-bold uppercase tracking-wider">Live</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW 2: PERFORMANCE METRICS -->
+        <div id="view-2" class="dashboard-view">
+            <div class="flex-1 flex flex-col justify-center gap-12">
+                <h2 class="text-gray-400 font-bold uppercase tracking-[0.2em] text-3xl text-center mb-4">Key Performance
+                    Indicators</h2>
+                <div class="grid grid-cols-3 gap-8">
+                    <!-- Orders -->
+                    <div
+                        class="bg-white rounded-[2.5rem] shadow-lg border border-gray-200 p-12 text-center h-[30rem] flex flex-col justify-center">
+                        <h3 class="text-3xl font-bold text-gray-500 uppercase tracking-wide mb-8">Orders Completed Today
+                        </h3>
+                        <div class="text-[8rem] font-black text-gray-800 leading-none mb-4" id="val-orders">--</div>
+                        <div class="text-green-500 font-bold text-2xl flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-arrow-trend-up"></i> On Target
+                        </div>
+                    </div>
+
+                    <!-- Avg Time -->
+                    <div
+                        class="bg-white rounded-[2.5rem] shadow-lg border border-gray-200 p-12 text-center h-[30rem] flex flex-col justify-center">
+                        <h3 class="text-3xl font-bold text-gray-500 uppercase tracking-wide mb-8">Avg Process Time</h3>
+                        <div class="text-[7rem] font-black text-blue-600 leading-none mb-4 font-mono tracking-tighter"
+                            id="val-time">--m --s</div>
+                        <div class="text-blue-500 font-bold text-2xl">
+                            Optimal Pace
+                        </div>
+                    </div>
+
+                    <!-- Replenishment -->
+                    <div
+                        class="bg-white rounded-[2.5rem] shadow-lg border border-gray-200 p-12 text-center h-[30rem] flex flex-col justify-center">
+                        <h3 class="text-3xl font-bold text-gray-500 uppercase tracking-wide mb-8">Active Replenishments
+                        </h3>
+                        <div class="text-[8rem] font-black text-orange-500 leading-none mb-4" id="val-replenish">--
+                        </div>
+                        <div class="text-orange-400 font-bold text-2xl">
+                            Zone B High
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW 3: PIPELINE FLOW -->
+        <div id="view-3" class="dashboard-view">
+            <div class="flex-1 flex flex-col justify-center">
+                <h2 class="text-gray-400 font-bold uppercase tracking-[0.2em] text-3xl text-center mb-12">Live Workflow
+                    Pipeline</h2>
+
+                <div
+                    class="bg-white rounded-[3rem] shadow-xl border border-gray-200 p-16 flex items-center justify-between relative overflow-hidden h-[25rem]">
+                    <div class="absolute inset-x-0 top-1/2 h-4 -mt-2 flow-bg opacity-30"></div>
+
+                    <!-- Builder Node -->
+                    <div class="relative z-10 flex flex-col items-center gap-6">
+                        <div
+                            class="w-40 h-40 bg-blue-600 rounded-full flex items-center justify-center text-6xl text-white font-black shadow-2xl border-8 border-white ring-4 ring-blue-100">
+                            <span id="flow-builder">--</span>
+                        </div>
+                        <div class="text-3xl font-bold text-gray-600 uppercase tracking-wide">Builder</div>
+                    </div>
+
+                    <!-- Groover Node -->
+                    <div class="relative z-10 flex flex-col items-center gap-6">
+                        <div
+                            class="w-40 h-40 bg-yellow-500 rounded-full flex items-center justify-center text-6xl text-white font-black shadow-2xl border-8 border-white ring-4 ring-yellow-100">
+                            <span id="flow-groover">--</span>
+                        </div>
+                        <div class="text-3xl font-bold text-gray-600 uppercase tracking-wide">Groover</div>
+                    </div>
+
+                    <!-- Packer Node -->
+                    <div class="relative z-10 flex flex-col items-center gap-6">
+                        <div
+                            class="w-40 h-40 bg-purple-600 rounded-full flex items-center justify-center text-6xl text-white font-black shadow-2xl border-8 border-white ring-4 ring-purple-100">
+                            <span id="flow-packer">--</span>
+                        </div>
+                        <div class="text-3xl font-bold text-gray-600 uppercase tracking-wide">Packer</div>
+                    </div>
+
+                    <!-- Complete Node -->
+                    <div class="relative z-10 flex flex-col items-center gap-6">
+                        <div
+                            class="w-40 h-40 bg-green-600 rounded-full flex items-center justify-center text-6xl text-white font-black shadow-2xl border-8 border-white ring-4 ring-green-100">
+                            <span id="flow-complete">--</span>
+                        </div>
+                        <div class="text-3xl font-bold text-gray-600 uppercase tracking-wide">Complete</div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- URGENT ALERT OVERLAY -->
+    <div id="urgent-overlay"
+        class="fixed inset-x-0 top-32 flex justify-center pointer-events-none opacity-0 transition-opacity duration-300 z-50">
+        <div
+            class="bg-red-600 text-white px-12 py-6 rounded-2xl shadow-2xl border-4 border-red-400 flex items-center gap-6 animate-bounce">
+            <i class="fa-solid fa-triangle-exclamation text-5xl"></i>
+            <div class="text-center">
+                <div class="text-3xl font-black uppercase tracking-widest">High Activity Detected</div>
+                <div class="text-xl font-bold uppercase tracking-wide text-red-100" id="alert-zone">Packer Zone</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- BOTTOM TICKER -->
+    <footer class="bg-gray-900 text-white py-6 overflow-hidden shrink-0">
+        <div class="whitespace-nowrap overflow-hidden w-full relative">
+            <div class="inline-block ticker-content text-3xl font-bold uppercase tracking-widest">
+                WAREHOUSE OPERATIONS NORMAL • BUILDER ZONE ACTIVE • GROOVER QUEUE OPTIMAL • PACKING EFFICIENCY 98% •
+                REPLENISHMENT TEAM DEPLOYED • SAFETY FIRST •
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // --- DATA & STATE ---
+        const state = {
+            builder: 4,
+            groover: 3,
+            packer: 2,
+            orders: 248,
+            replenish: 12,
+            timeMin: 1,
+            timeSec: 42,
+            flow: { b: 12, g: 8, p: 5, c: 248 }
+        };
+
+        // --- VIEW ROTATION ---
+        let currentView = 1;
+        const totalViews = 3;
+
+        function rotateView() {
+            // Hide all
+            for (let i = 1; i <= totalViews; i++) {
+                document.getElementById(`view-${i}`).classList.remove('active');
+            }
+            // Next
+            currentView = (currentView % totalViews) + 1;
+            // Show
+            document.getElementById(`view-${currentView}`).classList.add('active');
+        }
+
+        setInterval(rotateView, 15000); // 15s
+
+        // --- UI UPDATES ---
+        function updateUI() {
+            // Role Counts
+            updateNumber('val-builder', state.builder);
+            updateNumber('val-groover', state.groover);
+            updateNumber('val-packer', state.packer);
+
+            // Metrics
+            updateNumber('val-orders', state.orders);
+            updateNumber('val-replenish', state.replenish);
+            document.getElementById('val-time').textContent = `${state.timeMin}m ${state.timeSec.toString().padStart(2, '0')}s`;
+
+            // Flow
+            updateNumber('flow-builder', state.flow.b);
+            updateNumber('flow-groover', state.flow.g);
+            updateNumber('flow-packer', state.flow.p);
+            updateNumber('flow-complete', state.flow.c);
+        }
+
+        function updateNumber(id, val) {
+            const el = document.getElementById(id);
+            if (el.textContent != val) {
+                el.textContent = val;
+                el.classList.add('scale-110', 'text-gray-400'); // Pop effect
+                setTimeout(() => el.classList.remove('scale-110', 'text-gray-400'), 200);
+            }
+        }
+
+        function triggerUrgent(zone) {
+            const overlay = document.getElementById('urgent-overlay');
+            const label = document.getElementById('alert-zone');
+
+            label.textContent = `${zone} Zone`;
+            overlay.classList.remove('opacity-0');
+
+            // Auto hide
+            setTimeout(() => overlay.classList.add('opacity-0'), 4000);
+
+            // Highlight Card if View 1 active
+            if (currentView === 1) {
+                const map = { 'Builder': 'card-builder', 'Groover': 'card-groover', 'Packer': 'card-packer' };
+                const card = document.getElementById(map[zone]);
+                if (card) {
+                    card.classList.add('urgent-flash', 'scale-105');
+                    setTimeout(() => card.classList.remove('urgent-flash', 'scale-105'), 4000);
+                }
+            }
+        }
+
+        // --- SIMULATION ---
+        function startSimulation() {
+            updateUI();
+
+            setInterval(() => {
+                const r = Math.random();
+
+                // 1. New Orders / Flow
+                if (r > 0.4) {
+                    state.orders++;
+                    state.flow.c = state.orders;
+
+                    // random flow movement
+                    if (state.flow.p > 0) state.flow.p--;
+                    state.flow.p += Math.floor(Math.random() * 2);
+                }
+
+                // 2. Replenish
+                if (r > 0.8) {
+                    state.replenish = Math.max(5, state.replenish + (Math.random() > 0.5 ? 1 : -1));
+                }
+
+                // 3. Roles
+                if (r > 0.7) state.builder = Math.max(2, Math.min(8, state.builder + (Math.random() > 0.5 ? 1 : -1)));
+                if (r > 0.75) state.groover = Math.max(2, Math.min(6, state.groover + (Math.random() > 0.5 ? 1 : -1)));
+                if (r > 0.8) state.packer = Math.max(2, Math.min(6, state.packer + (Math.random() > 0.5 ? 1 : -1)));
+
+                // 4. Urgent Logic
+                if (Math.random() > 0.92) {
+                    const zones = ['Builder', 'Groover', 'Packer'];
+                    const z = zones[Math.floor(Math.random() * zones.length)];
+                    triggerUrgent(z);
+                }
+
+                updateUI();
+            }, 3000);
+        }
+
+        // --- UTILS ---
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        setInterval(() => {
+            document.getElementById('clock').textContent = new Date().toLocaleTimeString();
+        }, 1000);
+
+        startSimulation();
+
+    </script>
+</body>
+
+</html>

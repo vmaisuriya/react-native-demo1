@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BlueZone Replenishment Status</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Custom Keyframe for Flash Effect */
+        @keyframes flash-red {
+
+            0%,
+            100% {
+                background-color: #ef4444;
+            }
+
+            /* red-500 */
+            50% {
+                background-color: #b91c1c;
+            }
+
+            /* red-700 */
+        }
+
+        .animate-flash {
+            animation: flash-red 1s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        /* Transition Styles */
+        .list-move {
+            transition: all 0.5s ease-in-out;
+        }
+
+        .list-enter {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        .list-enter-active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .list-leave-active {
+            opacity: 0;
+            transform: scale(0.9);
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 text-gray-900 h-screen overflow-hidden flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-white shadow-md z-20 px-8 py-4 flex justify-between items-center shrink-0 h-24">
+        <div class="flex items-center gap-4">
+            <div
+                class="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center text-white text-2xl shadow-sm">
+                <i class="fa-solid fa-dolly"></i>
+            </div>
+            <h1 class="text-3xl font-bold tracking-tight text-gray-800">BlueZone Replenishment Status</h1>
+        </div>
+        <div class="flex items-center gap-6">
+            <div class="bg-gray-50 border border-gray-200 rounded-xl px-6 py-2 shadow-inner">
+                <span id="clock" class="text-4xl font-mono font-bold text-gray-700 tracking-widest">--:--:--</span>
+            </div>
+            <button onclick="toggleFullscreen()"
+                class="bg-gray-200 hover:bg-gray-300 text-gray-600 p-4 rounded-xl transition-all shadow-sm">
+                <i class="fa-solid fa-expand text-xl"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Grid -->
+    <main class="flex-1 w-full h-full p-6 overflow-hidden">
+        <div class="grid grid-cols-3 gap-6 h-full">
+
+            <!-- COLUMN 1: PENDING -->
+            <div class="flex flex-col bg-white rounded-3xl shadow-sm border border-gray-200 overflow-hidden h-full">
+                <div class="bg-blue-50 border-b border-blue-100 p-6 text-center shrink-0">
+                    <h2 class="text-5xl font-black text-blue-600 uppercase tracking-wide">Pending</h2>
+                </div>
+                <!-- Content Area -->
+                <div id="col-pending" class="flex-1 overflow-y-auto p-4 space-y-4 relative">
+                    <!-- Cards injected here -->
+                </div>
+            </div>
+
+            <!-- COLUMN 2: IN PROGRESS -->
+            <div class="flex flex-col bg-white rounded-3xl shadow-sm border border-gray-200 overflow-hidden h-full">
+                <div class="bg-orange-50 border-b border-orange-100 p-6 text-center shrink-0">
+                    <h2 class="text-5xl font-black text-orange-500 uppercase tracking-wide">In Progress</h2>
+                </div>
+                <!-- Content Area -->
+                <div id="col-progress" class="flex-1 overflow-y-auto p-4 space-y-4 relative">
+                    <!-- Cards injected here -->
+                </div>
+            </div>
+
+            <!-- COLUMN 3: REPLENISHED -->
+            <div class="flex flex-col bg-white rounded-3xl shadow-sm border border-gray-200 overflow-hidden h-full">
+                <div class="bg-green-50 border-b border-green-100 p-6 text-center shrink-0">
+                    <h2 class="text-5xl font-black text-green-600 uppercase tracking-wide">Replenished</h2>
+                </div>
+                <!-- Content Area -->
+                <div id="col-replenished" class="flex-1 overflow-y-auto p-4 space-y-4 relative">
+                    <!-- Cards injected here -->
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        // --- CONFIG & STATE ---
+        const PENDING_TO_PROGRESS_MS = 6000;
+        const PROGRESS_TO_DONE_MS = 8000;
+        const NEW_ORDER_MS = 5000;
+        const REMOVE_DONE_MS = 5000;
+
+        let locations = [];
+        // Structure: { id: 'BZ-104', status: 'pending'|'progress'|'done', urgent: bool, timestamp: number }
+
+        // --- DOM ELEMENTS ---
+        const cols = {
+            pending: document.getElementById('col-pending'),
+            progress: document.getElementById('col-progress'),
+            done: document.getElementById('col-replenished')
+        };
+
+        // --- UTILS ---
+        function generateId() {
+            const zones = [1, 2, 3];
+            const zone = zones[Math.floor(Math.random() * zones.length)];
+            const shelf = Math.floor(Math.random() * 20) + 1;
+            return `BZ-${zone}${shelf.toString().padStart(2, '0')}`;
+        }
+
+        function playSound(type) {
+            // Placeholder for potential sound effects
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(e => console.log(e));
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        // --- RENDER LOGIC ---
+        function renderCard(loc) {
+            const div = document.createElement('div');
+
+            // Base Classes
+            let classes = "w-full h-32 rounded-2xl shadow-lg flex items-center justify-center transition-all duration-500 transform list-move list-enter";
+
+            // Status Colors
+            if (loc.status === 'pending') {
+                if (loc.urgent) {
+                    classes += " bg-red-500 text-white border-4 border-red-700 animate-flash scale-105 z-10";
+                } else {
+                    classes += " bg-blue-500 text-white";
+                }
+            } else if (loc.status === 'progress') {
+                classes += " bg-orange-400 text-gray-900 border-2 border-orange-500";
+            } else if (loc.status === 'done') {
+                classes += " bg-green-500 text-white border-2 border-green-600";
+            }
+
+            div.className = classes;
+            div.id = `card-${loc.id}`;
+            div.innerHTML = `<span class="text-7xl font-bold tracking-tighter">${loc.id}</span>`;
+
+            return div;
+        }
+
+        function render() {
+            // We'll perform a smart diff to avoid re-rendering DOM elements unnecessarily
+            // Actually, for simplicity and performance in this specific prototype, we will complete re-render columns
+            // BUT to keep animations smooth, we should ideally simply append/move.
+            // Let's simple-clear for now to ensure state consistency, but use a helper to find existing.
+
+            // However, full re-render breaks CSS transitions for movement.
+            // Better approach: Re-render only changes.
+
+            [
+                { id: 'pending', items: locations.filter(l => l.status === 'pending').sort((a, b) => b.urgent - a.urgent) },
+                { id: 'progress', items: locations.filter(l => l.status === 'progress') },
+                { id: 'done', items: locations.filter(l => l.status === 'done') }
+            ].forEach(group => {
+                const container = cols[group.id];
+                const currentIds = Array.from(container.children).map(c => c.id.replace('card-', ''));
+                const newIds = group.items.map(l => l.id);
+
+                // Remove old
+                Array.from(container.children).forEach(child => {
+                    const id = child.id.replace('card-', '');
+                    if (!newIds.includes(id)) {
+                        child.classList.add('list-leave-active');
+                        setTimeout(() => child.remove(), 500);
+                    }
+                });
+
+                // Add New / Update Existing
+                group.items.forEach((item, index) => {
+                    let card = document.getElementById(`card-${item.id}`);
+
+                    if (!card) {
+                        // Create New
+                        card = renderCard(item);
+                        container.appendChild(card);
+                        // Trigger reflow for enter animation
+                        void card.offsetWidth;
+                        card.classList.remove('list-enter');
+                        card.classList.add('list-enter-active');
+                    } else {
+                        // Move if needed (re-append updates position)
+                        // If status changed, we need to update classes
+
+                        // Check if parent successfully changed (moved columns)
+                        if (card.parentElement !== container) {
+                            container.appendChild(card);
+                        }
+
+                        // Re-apply classes for status updates
+                        let classes = "w-full h-32 rounded-2xl shadow-lg flex items-center justify-center transition-all duration-500 transform list-move";
+                        if (item.status === 'pending') {
+                            if (item.urgent) {
+                                classes += " bg-red-500 text-white border-4 border-red-700 animate-flash scale-105 z-10";
+                            } else {
+                                classes += " bg-blue-500 text-white";
+                            }
+                        } else if (item.status === 'progress') {
+                            classes += " bg-orange-400 text-gray-900 border-2 border-orange-500";
+                        } else if (item.status === 'done') {
+                            classes += " bg-green-500 text-white border-2 border-green-600";
+                        }
+                        card.className = classes;
+                    }
+
+                    // Order maintenance (simple append puts at bottom, need to insert)
+                    // But sorting handled by array order above. allow append to handle order naturally
+                    container.appendChild(card);
+                });
+            });
+        }
+
+        // --- SIMULATION ENGINE ---
+        function startSimulation() {
+            // Initial Data
+            for (let i = 0; i < 5; i++) addNewPending();
+            for (let i = 0; i < 2; i++) {
+                const l = addNewPending();
+                l.status = 'progress';
+            }
+            const done = addNewPending();
+            done.status = 'done';
+            done.doneAt = Date.now();
+
+            render();
+
+            // Loop: Add New
+            setInterval(() => {
+                addNewPending();
+                render();
+            }, NEW_ORDER_MS);
+
+            // Loop: Move Pending -> Progress
+            setInterval(() => {
+                const pend = locations.filter(l => l.status === 'pending');
+                if (pend.length > 0) {
+                    // Bias towards Urgent
+                    const urg = pend.find(l => l.urgent);
+                    const target = urg || pend[0];
+                    target.status = 'progress';
+                    render();
+                }
+            }, PENDING_TO_PROGRESS_MS);
+
+            // Loop: Move Progress -> Done
+            setInterval(() => {
+                const prog = locations.filter(l => l.status === 'progress');
+                if (prog.length > 0) {
+                    const target = prog[0];
+                    target.status = 'done';
+                    target.doneAt = Date.now();
+                    render();
+                }
+            }, PROGRESS_TO_DONE_MS);
+
+            // Loop: Remove Old Done
+            setInterval(() => {
+                const now = Date.now();
+                locations = locations.filter(l => {
+                    if (l.status === 'done' && (now - l.doneAt > REMOVE_DONE_MS)) {
+                        return false; // Remove
+                    }
+                    return true;
+                });
+                render();
+            }, 1000);
+        }
+
+        function addNewPending() {
+            const id = generateId();
+            // Prevent Dupes
+            if (locations.find(l => l.id === id)) return addNewPending();
+
+            const isUrgent = Math.random() > 0.8; // 20% urgent
+            const loc = {
+                id,
+                status: 'pending',
+                urgent: isUrgent,
+                timestamp: Date.now()
+            };
+            locations.push(loc);
+            return loc;
+        }
+
+        // --- CLOCK ---
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('clock').textContent = now.toLocaleTimeString('en-US', { hour12: true });
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // Start
+        startSimulation();
+
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Packer - Logistics Flow</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap"
+        rel="stylesheet">
+
+    <!-- Custom Config -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4', // Greenish tint for Packer to differentiate from Blue Groover
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            900: '#14532d',
+                        },
+                    },
+                    animation: {
+                        'shake': 'shake 0.5s cubic-bezier(.36,.07,.19,.97) both',
+                        'fade-in': 'fadeIn 0.3s ease-in-out',
+                        'bounce-short': 'bounceShort 0.5s ease-in-out 1'
+                    },
+                    keyframes: {
+                        shake: {
+                            '10%, 90%': { transform: 'translate3d(-1px, 0, 0)' },
+                            '20%, 80%': { transform: 'translate3d(2px, 0, 0)' },
+                            '30%, 50%, 70%': { transform: 'translate3d(-4px, 0, 0)' },
+                            '40%, 60%': { transform: 'translate3d(4px, 0, 0)' }
+                        },
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' }
+                        },
+                        bounceShort: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-5px)' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 text-gray-800 h-screen overflow-hidden flex flex-col">
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed top-5 right-5 z-[60] flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- VIEW: LOGIN -->
+    <div id="view-login" class="fixed inset-0 z-50 bg-gray-100 flex items-center justify-center">
+        <div class="bg-white p-10 rounded-2xl shadow-xl w-full max-w-md border border-gray-100">
+            <div class="text-center mb-8">
+                <div
+                    class="w-16 h-16 bg-brand-600 rounded-xl mx-auto flex items-center justify-center mb-4 shadow-lg text-white text-3xl">
+                    <i class="fa-solid fa-box-open"></i>
+                </div>
+                <h1 class="text-3xl font-bold text-gray-900">Packer</h1>
+                <p class="text-gray-500 mt-2">Order Packing Interface</p>
+            </div>
+            <form id="login-form" class="space-y-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+                    <input type="text" value="packer_01"
+                        class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-500 outline-none transition-all">
+                </div>
+                <button type="submit"
+                    class="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-3.5 rounded-lg shadow-md transition-all">
+                    Login to Dashboard
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- APP SHELL -->
+    <div id="view-app" class="hidden flex-1 flex flex-col h-full">
+
+        <!-- NAVBAR -->
+        <header class="bg-white border-b border-gray-200 h-16 flex items-center justify-between px-6 shrink-0 z-40">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center text-white">
+                    <i class="fa-solid fa-box-open text-sm"></i>
+                </div>
+                <span class="font-bold text-xl tracking-tight text-gray-900">Packer Flow</span>
+            </div>
+            <div class="flex items-center gap-4">
+                <div class="flex items-center gap-2 bg-brand-50 px-3 py-1.5 rounded-full border border-brand-100">
+                    <span class="w-2 h-2 rounded-full bg-brand-500 animate-pulse"></span>
+                    <span class="text-xs font-bold text-brand-700 uppercase tracking-wide">Packer Active</span>
+                </div>
+                <button onclick="logout()" class="text-gray-400 hover:text-red-500 transition-colors p-2">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- VIEW: DASHBOARD -->
+        <main id="view-dashboard" class="flex-1 overflow-hidden flex flex-col p-6 gap-6">
+            <!-- Widgets -->
+            <div class="grid grid-cols-4 gap-6 shrink-0">
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
+                    <div
+                        class="w-12 h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-boxes-stacked"></i>
+                    </div>
+                    <div>
+                        <span id="stat-ready" class="block text-2xl font-bold text-gray-900">--</span>
+                        <span class="text-xs text-gray-500 uppercase font-bold tracking-wider">Ready to Pack</span>
+                    </div>
+                </div>
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
+                    <div
+                        class="w-12 h-12 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-crown"></i>
+                    </div>
+                    <div>
+                        <span id="stat-vip" class="block text-2xl font-bold text-gray-900">--</span>
+                        <span class="text-xs text-gray-500 uppercase font-bold tracking-wider">VIP Priority</span>
+                    </div>
+                </div>
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
+                    <div
+                        class="w-12 h-12 rounded-full bg-gray-50 text-gray-600 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-check-double"></i>
+                    </div>
+                    <div>
+                        <span id="stat-packed" class="block text-2xl font-bold text-gray-900">--</span>
+                        <span class="text-xs text-gray-500 uppercase font-bold tracking-wider">Packed Today</span>
+                    </div>
+                </div>
+                <button onclick="openScanModal()"
+                    class="bg-brand-600 hover:bg-brand-700 text-white p-5 rounded-xl shadow-sm border border-brand-700 flex items-center justify-center gap-4 transition-all group hover:shadow-md cursor-pointer relative overflow-hidden">
+                    <i class="fa-solid fa-barcode text-3xl"></i>
+                    <div class="text-left">
+                        <span class="block text-xl font-bold">Start Order Scan</span>
+                        <span class="text-xs text-brand-100 uppercase font-bold tracking-wider opacity-80">Press
+                            F2</span>
+                    </div>
+                </button>
+            </div>
+
+            <!-- Toolbar -->
+            <div class="flex flex-col gap-4 bg-white p-4 rounded-xl shadow-sm border border-gray-100 shrink-0">
+                <div class="flex items-center gap-4">
+                    <div class="flex-1 relative">
+                        <i
+                            class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                        <input type="text" id="dashboard-search" placeholder="Search Order ID..."
+                            class="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-brand-500 outline-none">
+                    </div>
+                    <select id="filter-type"
+                        class="px-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-brand-500 outline-none bg-white">
+                        <option value="all">All Types</option>
+                        <option value="customer">Customer</option>
+                        <option value="internal">Internal</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Grid -->
+            <div class="flex-1 overflow-y-auto pr-2 no-scrollbar">
+                <div id="orders-grid" class="grid grid-cols-4 gap-4 pb-20">
+                    <!-- Cards Injected JS -->
+                </div>
+            </div>
+        </main>
+
+        <!-- VIEW: ORDER DETAILS (PACKING) -->
+        <main id="view-details" class="flex-1 flex flex-col bg-gray-50 hidden">
+
+            <!-- Header (Matches Groover's style, 4/8 split) -->
+            <div class="bg-white border-b border-gray-200 shadow-sm shrink-0 z-30 sticky top-0 grid grid-cols-12 h-24">
+
+                <!-- Left: Identity & Builder Info (Cols 4) -->
+                <div
+                    class="col-span-4 border-r border-gray-100 p-4 flex flex-col justify-center gap-2 relative overflow-hidden group">
+                    <div class="flex items-center justify-between relative z-10">
+                        <div class="flex items-center gap-3">
+                            <h2 id="detail-id" class="text-3xl font-bold text-gray-900 tracking-tight">--</h2>
+                            <span id="detail-type"
+                                class="px-2 py-0.5 rounded text-xs font-bold uppercase border">--</span>
+                        </div>
+                    </div>
+
+                    <!-- Box Info -->
+                    <div class="flex items-center gap-4 relative z-10 text-sm text-gray-500">
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-box-open text-gray-400"></i>
+                            <span id="detail-box">--</span>
+                        </div>
+                    </div>
+
+
+
+                    <button onclick="closeDetails()"
+                        class="absolute top-1/2 -translate-y-1/2 -left-3 bg-white border border-gray-200 rounded-full w-8 h-8 flex items-center justify-center shadow-sm text-gray-400 hover:text-brand-600 hover:border-brand-300 transition-all z-20">
+                        <i class="fa-solid fa-arrow-left"></i>
+                    </button>
+                </div>
+
+                <!-- Right: Builder & Groover Info (Cols 8) -->
+                <div class="col-span-8 flex items-center px-8 bg-gray-50/50 justify-end gap-12">
+                    <!-- Builder -->
+                    <div class="text-right">
+                        <p class="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Built By</p>
+                        <div class="flex flex-col items-end gap-0.5">
+                            <div class="flex items-center gap-2">
+                                <i class="fa-solid fa-hard-hat text-gray-300 text-xs"></i>
+                                <span class="font-bold text-gray-900" id="detail-builder-name">--</span>
+                            </div>
+                            <span class="text-[10px] text-gray-400 font-mono bg-gray-100 px-1.5 py-0.5 rounded"
+                                id="detail-built-at">--</span>
+                        </div>
+                    </div>
+                    <!-- Groover -->
+                    <div class="text-right">
+                        <p class="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Grooved By</p>
+                        <div class="flex flex-col items-end gap-0.5">
+                            <div class="flex items-center gap-2">
+                                <i class="fa-solid fa-dolly text-gray-300 text-xs"></i>
+                                <span class="font-bold text-gray-900" id="detail-groover-name">--</span>
+                            </div>
+                            <span class="text-[10px] text-gray-400 font-mono bg-gray-100 px-1.5 py-0.5 rounded"
+                                id="detail-grooved-at">--</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content (Matches Groover structure) -->
+            <div class="flex-1 overflow-hidden relative p-6">
+                <!-- Using same container structure as Groover -->
+                <div class="flex gap-6 h-full">
+
+                    <!-- LEFT: Product View (Cols 8) -->
+                    <div class="flex-[8] flex flex-col gap-4">
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col h-full items-center justify-center relative group"
+                            onclick="toggleProductList()">
+                            <div class="text-center z-10 transition-all group-hover:scale-105">
+                                <div class="text-[10rem] leading-none font-black text-gray-900 group-hover:text-brand-600 transition-colors"
+                                    id="detail-big-count">--</div>
+                                <p class="text-xl text-gray-400 font-bold uppercase tracking-widest mt-4">Total Items
+                                </p>
+                                <p
+                                    class="text-xs text-brand-500 font-bold mt-4 uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0">
+                                    Click to View List</p>
+                            </div>
+
+                            <!-- List Overlay -->
+                            <div id="product-list-overlay"
+                                class="absolute inset-0 bg-white/98 z-20 hidden flex flex-col p-8 overflow-y-auto animate-fade-in">
+                                <div class="flex justify-between items-center mb-6 shrink-0">
+                                    <h3 class="text-2xl font-bold text-gray-800">Product List</h3>
+                                    <button class="text-gray-400 hover:text-gray-600"><i
+                                            class="fa-solid fa-xmark text-2xl"></i></button>
+                                </div>
+                                <div class="space-y-3" id="product-list-content">
+                                    <!-- Injected -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- RIGHT: Actions (Cols 4) -->
+                    <div class="flex-[4] flex flex-col gap-4">
+                        <div class="flex-1 grid grid-rows-4 gap-4">
+                            <!-- OOS -->
+                            <button onclick="markOOS()"
+                                class="bg-white border border-orange-200 hover:bg-orange-50 hover:border-orange-300 text-orange-700 rounded-xl p-4 flex items-center justify-center gap-3 transition-all font-bold shadow-sm group">
+                                <i
+                                    class="fa-solid fa-triangle-exclamation text-xl group-hover:scale-110 transition-transform"></i>
+                                Mark Out of Stock
+                            </button>
+                            <!-- Box -->
+                            <button onclick="changeBox()"
+                                class="bg-white border border-gray-200 hover:bg-gray-50 hover:border-brand-300 text-gray-700 hover:text-brand-600 rounded-xl p-4 flex items-center justify-center gap-3 transition-all font-bold shadow-sm group">
+                                <i class="fa-solid fa-box-open text-xl group-hover:scale-110 transition-transform"></i>
+                                Change Box
+                            </button>
+                            <!-- Cancel -->
+                            <button onclick="cancelOrder()"
+                                class="bg-white border border-red-200 hover:bg-red-50 hover:border-red-300 text-red-700 rounded-xl p-4 flex items-center justify-center gap-3 transition-all font-bold shadow-sm group">
+                                <i class="fa-solid fa-ban text-xl group-hover:scale-110 transition-transform"></i>
+                                Cancel Order
+                            </button>
+                            <!-- Complete (Larger) -->
+                            <button onclick="completePacking()"
+                                class="row-span-1 bg-brand-600 hover:bg-brand-700 text-white rounded-xl p-4 flex items-center justify-center gap-3 transition-all font-bold shadow-md text-xl group">
+                                <i
+                                    class="fa-solid fa-clipboard-check text-2xl group-hover:scale-110 transition-transform"></i>
+                                Complete Packing
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </main>
+
+    </div>
+
+    <!-- MODAL: SCAN START -->
+    <div id="modal-scan"
+        class="fixed inset-0 z-50 bg-black/50 flex items-center justify-center hidden opacity-0 transition-opacity duration-200">
+        <div
+            class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-lg transform scale-95 transition-transform duration-200">
+            <div class="flex justify-between items-start mb-6">
+                <h2 class="text-2xl font-bold text-gray-900">Scan Order to Pack</h2>
+                <button onclick="closeScanModal()" class="text-gray-400 hover:text-gray-600"><i
+                        class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <div class="relative mb-6">
+                <input type="text" id="input-scan"
+                    class="w-full pl-4 pr-12 py-4 rounded-xl border-2 border-brand-500 focus:ring-4 focus:ring-brand-100 outline-none text-xl font-bold font-mono text-center text-gray-800"
+                    placeholder="Scan Barcode...">
+                <button
+                    class="absolute right-3 top-1/2 -translate-y-1/2 bg-gray-100 hover:bg-gray-200 p-2 rounded-lg text-gray-600"><i
+                        class="fa-solid fa-barcode"></i></button>
+            </div>
+            <p class="text-center text-gray-500 text-sm">Example: Type <strong>ORD-1001</strong> and press Enter</p>
+        </div>
+    </div>
+
+    <!-- MODAL: CHANGE BOX -->
+    <div id="modal-box"
+        class="fixed inset-0 z-50 bg-black/50 flex items-center justify-center hidden opacity-0 transition-opacity duration-200">
+        <div class="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-sm">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-gray-900">Select Box Size</h3>
+                <button onclick="closeBoxModal()" class="text-gray-400 hover:text-gray-600"><i
+                        class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="space-y-2">
+                <button onclick="selectBox('8 x 8 x 4')"
+                    class="w-full text-left px-4 py-3 rounded-xl border border-gray-200 hover:border-brand-500 hover:bg-brand-50 flex justify-between items-center group transition-all">
+                    <span class="font-bold text-gray-700 group-hover:text-brand-700">8 x 8 x 4</span>
+                    <span class="text-xs text-gray-400">Standard Small</span>
+                </button>
+                <button onclick="selectBox('10 x 8 x 6')"
+                    class="w-full text-left px-4 py-3 rounded-xl border border-gray-200 hover:border-brand-500 hover:bg-brand-50 flex justify-between items-center group transition-all">
+                    <span class="font-bold text-gray-700 group-hover:text-brand-700">10 x 8 x 6</span>
+                    <span class="text-xs text-gray-400">Medium</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- STATE ---
+        const state = {
+            orders: [],
+            activeOrder: null,
+            packerName: 'Sarah Lee'
+        };
+
+        // --- MOCK DATA ---
+        function generateData() {
+            const productPool = [
+                { name: 'Wireless Headphones', sku: 'WH-500' },
+                { name: 'USB-C Cable (2m)', sku: 'CB-200' },
+                { name: 'Smart Watch Gen 5', sku: 'SW-005' },
+                { name: 'Laptop Stand', sku: 'LS-100' }
+            ];
+
+            state.orders = Array.from({ length: 25 }, (_, i) => {
+                const id = `ORD-${1001 + i}`;
+                const itemCount = Math.floor(Math.random() * 8) + 1;
+                const products = [];
+                for (let j = 0; j < itemCount; j++) {
+                    const t = productPool[Math.floor(Math.random() * productPool.length)];
+                    const ex = products.find(p => p.sku === t.sku);
+                    if (ex) ex.qty++;
+                    else products.push({ ...t, qty: 1 });
+                }
+
+                return {
+                    id,
+                    type: Math.random() > 0.8 ? 'internal' : 'customer',
+                    boxSize: '8 x 8 x 4',
+                    products,
+                    totalItems: products.reduce((a, b) => a + b.qty, 0),
+                    builderName: 'Alex Turner',
+                    builtAt: new Date(Date.now() - Math.random() * 7200000 - 3600000).toLocaleString(),
+                    grooverName: 'John Smith',
+                    groovedAt: new Date(Date.now() - Math.random() * 3600000).toLocaleString(),
+                    status: 'ready_to_pack'
+                };
+            });
+            renderDashboard();
+            updateStats();
+        }
+
+        // --- CORE FUNCTIONS ---
+        function renderDashboard() {
+            const grid = document.getElementById('orders-grid');
+            const search = document.getElementById('dashboard-search').value.toLowerCase();
+            const filter = document.getElementById('filter-type').value;
+
+            grid.innerHTML = '';
+
+            const filtered = state.orders.filter(o => {
+                const matchSearch = o.id.toLowerCase().includes(search);
+                const matchFilter = filter === 'all' || o.type === filter;
+                return matchSearch && matchFilter;
+            });
+
+            filtered.forEach(o => {
+                const card = document.createElement('div');
+                // Matching Groover card style exactly
+                card.className = `bg-white p-5 rounded-xl shadow-sm border ${o.type === 'internal' ? 'border-l-4 border-l-purple-500 border-gray-200' : 'border-gray-200'} hover:shadow-md transition-all cursor-pointer group flex flex-col gap-3`;
+                card.onclick = () => { startProcessing(o.id) };
+
+                const badge = o.type === 'internal'
+                    ? '<span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-purple-100 text-purple-700 border border-purple-200">Internal</span>'
+                    : '<span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-blue-50 text-blue-600 border border-blue-100">Customer</span>';
+
+                card.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div class="flex items-center gap-2">
+                             <span class="font-bold text-lg text-gray-900 group-hover:text-brand-600 transition-colors">${o.id}</span>
+                             ${badge}
+                        </div>
+                        <span class="text-xs font-mono text-gray-400">${o.boxSize}</span>
+                    </div>
+                    
+                    <div class="text-sm text-gray-500 space-y-1">
+                        <div class="flex items-center gap-2"><i class="fa-solid fa-layer-group w-4"></i> ${o.totalItems} items</div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function updateStats() {
+            document.getElementById('stat-ready').textContent = state.orders.length;
+            document.getElementById('stat-vip').textContent = state.orders.filter(o => o.type === 'internal').length; // Mock logic
+            document.getElementById('stat-packed').textContent = Math.floor(Math.random() * 20);
+        }
+
+        // --- ACTION FLOW ---
+        function startProcessing(id) {
+            const order = state.orders.find(o => o.id === id);
+            if (!order) {
+                toast('Invalid Order ID', 'error');
+                return;
+            }
+            state.activeOrder = order;
+            renderDetails();
+            closeScanModal();
+            const viewDashboard = document.getElementById('view-dashboard');
+            const viewDetails = document.getElementById('view-details');
+            if (viewDashboard) viewDashboard.classList.add('hidden');
+            if (viewDetails) viewDetails.classList.remove('hidden');
+        }
+
+        function renderDetails() {
+            const o = state.activeOrder;
+            document.getElementById('detail-id').textContent = o.id;
+
+            // Set type class and text
+            const typeEl = document.getElementById('detail-type');
+            typeEl.textContent = o.type;
+            typeEl.className = `px-2 py-0.5 rounded text-xs font-bold uppercase border ${o.type === 'internal' ? 'bg-purple-100 text-purple-700 border-purple-200' : 'bg-blue-50 text-blue-600 border-blue-100'}`;
+
+            document.getElementById('detail-box').textContent = `Box: ${o.boxSize}`;
+            document.getElementById('detail-builder-name').textContent = o.builderName;
+            document.getElementById('detail-built-at').textContent = o.builtAt;
+            document.getElementById('detail-groover-name').textContent = o.grooverName;
+            document.getElementById('detail-grooved-at').textContent = o.groovedAt;
+
+            // Big Display
+            document.getElementById('detail-big-count').textContent = o.totalItems;
+
+            // Product List
+            const list = document.getElementById('product-list-content');
+            list.innerHTML = o.products.map(p => `
+                <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg border border-gray-100">
+                    <span class="font-bold text-gray-700">${p.name} <span class="text-xs text-gray-400 font-normal">(${p.sku})</span></span>
+                    <span class="bg-white px-3 py-1 rounded border border-gray-200 font-bold text-gray-900">x${p.qty}</span>
+                </div>
+            `).join('');
+        }
+
+        function closeDetails() {
+            document.getElementById('view-details').classList.add('hidden');
+            document.getElementById('view-dashboard').classList.remove('hidden');
+            state.activeOrder = null;
+        }
+
+        function toggleProductList() {
+            const ol = document.getElementById('product-list-overlay');
+            if (ol.classList.contains('hidden')) ol.classList.remove('hidden');
+            else ol.classList.add('hidden');
+        }
+
+        function completePacking() {
+            if (confirm('Confirm packing complete?')) {
+                toast('Packing Complete!', 'success');
+                // Remove
+                state.orders = state.orders.filter(o => o.id !== state.activeOrder.id);
+                // Back
+                document.getElementById('view-details').classList.add('hidden');
+                document.getElementById('view-dashboard').classList.remove('hidden');
+                state.activeOrder = null;
+                renderDashboard();
+                updateStats();
+            }
+        }
+
+        function markOOS() {
+            toast('Marked Out of Stock', 'warning');
+        }
+
+        function cancelOrder() {
+            if (confirm('Cancel packing for this order?')) {
+                toast('Order Cancelled', 'error');
+                document.getElementById('view-details').classList.add('hidden');
+                document.getElementById('view-dashboard').classList.remove('hidden');
+                state.activeOrder = null;
+            }
+        }
+
+        // --- BOX LOGIC ---
+        function changeBox() {
+            const modal = document.getElementById('modal-box');
+            modal.classList.remove('hidden');
+            setTimeout(() => modal.classList.remove('opacity-0'), 10);
+        }
+        function closeBoxModal() {
+            const modal = document.getElementById('modal-box');
+            modal.classList.add('opacity-0');
+            setTimeout(() => modal.classList.add('hidden'), 200);
+        }
+        function selectBox(size) {
+            state.activeOrder.boxSize = size;
+            renderDetails();
+            closeBoxModal();
+            toast(`Box changed to ${size}`);
+        }
+
+        // --- SCAN MODAL ---
+        function openScanModal() {
+            const modal = document.getElementById('modal-scan');
+            modal.classList.remove('hidden');
+            setTimeout(() => modal.classList.remove('opacity-0'), 10);
+            document.getElementById('input-scan').value = '';
+            document.getElementById('input-scan').focus();
+        }
+        function closeScanModal() {
+            const modal = document.getElementById('modal-scan');
+            modal.classList.add('opacity-0');
+            setTimeout(() => modal.classList.add('hidden'), 200);
+        }
+
+        // --- UTILS ---
+        function toast(msg, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const el = document.createElement('div');
+            const bg = type === 'error' ? 'bg-red-500' : type === 'warning' ? 'bg-yellow-500' : 'bg-green-500';
+            el.className = `${bg} text-white px-6 py-3 rounded-lg shadow-lg font-bold animate-fade-in flex items-center gap-2`;
+            el.innerHTML = type === 'error' ? `<i class="fa-solid fa-circle-xmark"></i> ${msg}` : `<i class="fa-solid fa-check-circle"></i> ${msg}`;
+            container.appendChild(el);
+            setTimeout(() => el.remove(), 3000);
+        }
+
+        function logout() { location.reload(); }
+
+        // --- INIT ---
+        document.getElementById('login-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            document.getElementById('view-login').classList.add('hidden');
+            document.getElementById('view-app').classList.remove('hidden');
+            generateData();
+        });
+
+        document.getElementById('input-scan').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') startProcessing(e.target.value.trim());
+        });
+
+        // Filter Listeners
+        document.getElementById('dashboard-search').addEventListener('input', renderDashboard);
+        document.getElementById('filter-type').addEventListener('change', renderDashboard);
+
+    </script>
+</body>
+
+</html>

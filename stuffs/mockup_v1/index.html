@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mockup</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="styles.css">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0ea5e9', // Sky 500
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            900: '#0c4a6e',
+                        },
+                        sidebar: '#1e293b', // Slate 800
+                        sidebarHover: '#334155', // Slate 700
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+
+<body class="bg-gray-50 text-gray-800 font-sans antialiased h-screen flex overflow-hidden">
+
+    <!-- Sidebar -->
+    <nav id="sidebar"
+        class="bg-sidebar text-white flex flex-col transition-all duration-300 ease-in-out w-64 shadow-xl z-20">
+
+        <!-- Sidebar Header -->
+        <div class="h-16 flex items-center justify-between px-4 border-b border-gray-700">
+            <div id="logo-container" class="flex items-center gap-3 overflow-hidden whitespace-nowrap">
+                <div class="w-8 h-8 rounded bg-brand-500 flex items-center justify-center flex-shrink-0">
+                    <i class="fa-solid fa-layer-group text-white"></i>
+                </div>
+                <span class="font-bold text-lg tracking-wide transition-opacity duration-300 opacity-100 logo-text">PIM
+                    3.0</span>
+            </div>
+            <button id="toggle-sidebar"
+                class="text-gray-400 hover:text-white focus:outline-none transition-colors p-1 rounded hover:bg-gray-700">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+        </div>
+
+        <!-- Navigation Links -->
+        <div class="flex-1 overflow-y-auto py-4">
+            <ul class="space-y-1 px-2">
+                <!-- Builder -->
+                <li>
+                    <a href="#"
+                        class="nav-item active flex items-center gap-4 px-3 py-3 rounded-lg hover:bg-sidebarHover transition-colors group relative"
+                        data-target="builder">
+                        <i
+                            class="fa-solid fa-mobile-screen-button w-6 text-center text-gray-400 group-hover:text-brand-400 transition-colors"></i>
+                        <span
+                            class="whitespace-nowrap overflow-hidden transition-all duration-300 nav-text">Builder</span>
+                        <!-- Tooltip for collapsed mode -->
+                        <div
+                            class="absolute left-full top-1/2 -translate-y-1/2 ml-2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50 whitespace-nowrap tooltip hidden">
+                            Builder
+                        </div>
+                    </a>
+                </li>
+                <!-- Groover -->
+                <li>
+                    <a href="#"
+                        class="nav-item flex items-center gap-4 px-3 py-3 rounded-lg hover:bg-sidebarHover transition-colors group relative"
+                        data-target="groover">
+                        <i
+                            class="fa-solid fa-dolly w-6 text-center text-gray-400 group-hover:text-brand-400 transition-colors"></i>
+                        <span
+                            class="whitespace-nowrap overflow-hidden transition-all duration-300 nav-text">Groover</span>
+                        <!-- Tooltip for collapsed mode -->
+                        <div
+                            class="absolute left-full top-1/2 -translate-y-1/2 ml-2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50 whitespace-nowrap tooltip hidden">
+                            Groover
+                        </div>
+                    </a>
+                </li>
+                <!-- Packer -->
+                <li>
+                    <a href="#"
+                        class="nav-item flex items-center gap-4 px-3 py-3 rounded-lg hover:bg-sidebarHover transition-colors group relative"
+                        data-target="packer">
+                        <i
+                            class="fa-solid fa-box-open w-6 text-center text-gray-400 group-hover:text-brand-400 transition-colors"></i>
+                        <span
+                            class="whitespace-nowrap overflow-hidden transition-all duration-300 nav-text">Packer</span>
+                        <!-- Tooltip for collapsed mode -->
+                        <div
+                            class="absolute left-full top-1/2 -translate-y-1/2 ml-2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50 whitespace-nowrap tooltip hidden">
+                            Packer
+                        </div>
+                    </a>
+                </li>
+                <!-- Packer 2 -->
+                <li>
+                    <a href="#"
+                        class="nav-item flex items-center gap-4 px-3 py-3 rounded-lg hover:bg-sidebarHover transition-colors group relative"
+                        data-target="packer-2">
+                        <i
+                            class="fa-solid fa-boxes-packing w-6 text-center text-gray-400 group-hover:text-brand-400 transition-colors"></i>
+                        <span class="whitespace-nowrap overflow-hidden transition-all duration-300 nav-text">Packer
+                            2</span>
+                        <!-- Tooltip for collapsed mode -->
+                        <div
+                            class="absolute left-full top-1/2 -translate-y-1/2 ml-2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50 whitespace-nowrap tooltip hidden">
+                            Packer 2
+                        </div>
+                    </a>
+                </li>
+                <!-- BlueZone Replenishment -->
+                <li>
+                    <a href="#"
+                        class="nav-item flex items-center gap-4 px-3 py-3 rounded-lg hover:bg-sidebarHover transition-colors group relative"
+                        data-target="bluezone">
+                        <i
+                            class="fa-solid fa-mobile-screen w-6 text-center text-gray-400 group-hover:text-brand-400 transition-colors"></i>
+                        <span
+                            class="whitespace-nowrap overflow-hidden transition-all duration-300 nav-text">BlueZone</span>
+                        <!-- Tooltip for collapsed mode -->
+                        <div
+                            class="absolute left-full top-1/2 -translate-y-1/2 ml-2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50 whitespace-nowrap tooltip hidden">
+                            BlueZone
+                        </div>
+                    </a>
+                </li>
+                <!-- TV Dashboards Section -->
+                <div class="mt-4 mb-2 px-4 text-xs font-bold text-gray-400 uppercase tracking-wider hidden md:block"
+                    id="tv-header">
+                    TV Signage
+                </div>
+
+                <li>
+                    <a href="#"
+                        class="nav-item flex items-center gap-4 px-3 py-3 rounded-lg hover:bg-sidebarHover transition-colors group relative"
+                        data-target="builder-tv">
+                        <i
+                            class="fa-solid fa-layer-group w-6 text-center text-gray-400 group-hover:text-blue-400 transition-colors"></i>
+                        <span class="whitespace-nowrap overflow-hidden transition-all duration-300 nav-text">Builder
+                            TV</span>
+                        <div
+                            class="absolute left-full top-1/2 -translate-y-1/2 ml-2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50 whitespace-nowrap tooltip hidden">
+                            Builder TV</div>
+                    </a>
+                </li>
+                <li>
+                    <a href="#"
+                        class="nav-item flex items-center gap-4 px-3 py-3 rounded-lg hover:bg-sidebarHover transition-colors group relative"
+                        data-target="groover-tv">
+                        <i
+                            class="fa-solid fa-list-check w-6 text-center text-gray-400 group-hover:text-yellow-400 transition-colors"></i>
+                        <span class="whitespace-nowrap overflow-hidden transition-all duration-300 nav-text">Groover
+                            TV</span>
+                        <div
+                            class="absolute left-full top-1/2 -translate-y-1/2 ml-2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50 whitespace-nowrap tooltip hidden">
+                            Groover TV</div>
+                    </a>
+                </li>
+                <li>
+                    <a href="#"
+                        class="nav-item flex items-center gap-4 px-3 py-3 rounded-lg hover:bg-sidebarHover transition-colors group relative"
+                        data-target="packer-tv">
+                        <i
+                            class="fa-solid fa-box-open w-6 text-center text-gray-400 group-hover:text-purple-400 transition-colors"></i>
+                        <span class="whitespace-nowrap overflow-hidden transition-all duration-300 nav-text">Packer
+                            TV</span>
+                        <div
+                            class="absolute left-full top-1/2 -translate-y-1/2 ml-2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50 whitespace-nowrap tooltip hidden">
+                            Packer TV</div>
+                    </a>
+                </li>
+                <li>
+                    <a href="#"
+                        class="nav-item flex items-center gap-4 px-3 py-3 rounded-lg hover:bg-sidebarHover transition-colors group relative"
+                        data-target="ops-tv">
+                        <i
+                            class="fa-solid fa-earth-americas w-6 text-center text-gray-400 group-hover:text-green-400 transition-colors"></i>
+                        <span class="whitespace-nowrap overflow-hidden transition-all duration-300 nav-text">Ops
+                            Command</span>
+                        <div
+                            class="absolute left-full top-1/2 -translate-y-1/2 ml-2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50 whitespace-nowrap tooltip hidden">
+                            Ops Command</div>
+                    </a>
+                </li>
+                <li>
+                    <a href="#"
+                        class="nav-item flex items-center gap-4 px-3 py-3 rounded-lg hover:bg-sidebarHover transition-colors group relative"
+                        data-target="ops-2-tv">
+                        <i
+                            class="fa-solid fa-satellite-dish w-6 text-center text-gray-400 group-hover:text-red-400 transition-colors"></i>
+                        <span class="whitespace-nowrap overflow-hidden transition-all duration-300 nav-text">Ops Command
+                            2</span>
+                        <div
+                            class="absolute left-full top-1/2 -translate-y-1/2 ml-2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50 whitespace-nowrap tooltip hidden">
+                            Ops Command 2</div>
+                    </a>
+                </li>
+
+                <!-- Bottom User Profile Removed as per request -->
+    </nav>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col h-full overflow-hidden bg-gray-50 relative">
+
+        <!-- Content Canvas -->
+        <div id="content-area" class="flex-1 overflow-hidden bg-gray-100 relative">
+            <iframe id="workflow-frame" src="builder.html" class="w-full h-full border-0"
+                title="Workflow Content"></iframe>
+        </div>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
